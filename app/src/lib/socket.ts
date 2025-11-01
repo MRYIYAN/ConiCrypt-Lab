@@ -43,7 +43,7 @@ export class SocketClient {
     }
   }
 
-  send(data: any): Promise<any> {
+  send(data: Record<string, unknown>): Promise<Record<string, unknown>> {
     return new Promise((resolve, reject) => {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
         reject(new Error('WebSocket is not connected'));
@@ -52,7 +52,7 @@ export class SocketClient {
 
       const messageHandler = (event: MessageEvent) => {
         try {
-          const response = JSON.parse(event.data);
+          const response = JSON.parse(event.data) as Record<string, unknown>;
           this.ws?.removeEventListener('message', messageHandler);
           resolve(response);
         } catch (error) {

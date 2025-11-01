@@ -9,7 +9,11 @@ export function ECCPage() {
   const [p2, setP2] = useState({ x: 1, y: 0 });
   const [scalar, setScalar] = useState(5);
   const [operation, setOperation] = useState('add');
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{
+    operation: string;
+    result: { x: number; y: number } | 'infinity';
+    scalar?: number;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,10 +32,14 @@ export function ECCPage() {
         scalar,
       });
 
-      if (response.status === 'success') {
-        setResult(response.data);
+      if (response.status === 'success' && response.data) {
+        setResult(response.data as {
+          operation: string;
+          result: { x: number; y: number } | 'infinity';
+          scalar?: number;
+        });
       } else {
-        setError(response.message || 'Unknown error');
+        setError((response.message as string) || 'Unknown error');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process request');

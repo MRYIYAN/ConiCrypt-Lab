@@ -12,7 +12,12 @@ export function ConicsPage() {
     E: 0,
     F: -1,
   });
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{
+    type: string;
+    discriminant: number;
+    coefficients: typeof coefficients;
+    points: Array<{ x: number; y: number }>;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,10 +32,15 @@ export function ConicsPage() {
         ...coefficients,
       });
 
-      if (response.status === 'success') {
-        setResult(response.data);
+      if (response.status === 'success' && response.data) {
+        setResult(response.data as {
+          type: string;
+          discriminant: number;
+          coefficients: typeof coefficients;
+          points: Array<{ x: number; y: number }>;
+        });
       } else {
-        setError(response.message || 'Unknown error');
+        setError((response.message as string) || 'Unknown error');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process request');

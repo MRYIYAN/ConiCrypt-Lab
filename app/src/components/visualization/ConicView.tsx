@@ -14,7 +14,7 @@ interface ConicViewProps {
   points?: Array<{ x: number; y: number }>;
 }
 
-export function ConicView({ type, coefficients, points }: ConicViewProps) {
+export function ConicView({ points }: ConicViewProps) {
   const curvePoints = useMemo(() => {
     // Generate points for visualization based on conic type
     const pts: [number, number, number][] = [];
@@ -28,7 +28,7 @@ export function ConicView({ type, coefficients, points }: ConicViewProps) {
     }
     
     return pts;
-  }, [type, coefficients]);
+  }, []);
 
   return (
     <group>
