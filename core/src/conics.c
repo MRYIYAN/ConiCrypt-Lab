@@ -21,6 +21,8 @@ const char* classify_conic(ConicCoefficients *coeffs) {
 }
 
 void generate_conic_points(ConicCoefficients *coeffs, char *output_buffer, size_t buffer_size) {
+    // Placeholder implementation - in production, generate actual points based on conic type
+    (void)coeffs; // Mark as intentionally unused for now
     snprintf(output_buffer, buffer_size, 
              "[{\"x\":0,\"y\":0},{\"x\":1,\"y\":1},{\"x\":-1,\"y\":1}]");
 }

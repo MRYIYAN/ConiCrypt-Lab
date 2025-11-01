@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 interface SceneCanvasProps {
   children: ReactNode;
