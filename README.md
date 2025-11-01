@@ -17,7 +17,7 @@ Incluye **Bash** para automatización y **Python** para ploteo opcional. Entorno
 
 ---
 
-## 🧰 Tech Stack
+##  Tech Stack
 
 ### Lenguajes de programación
 <p align="center">
@@ -52,15 +52,15 @@ Incluye **Bash** para automatización y **Python** para ploteo opcional. Entorno
 
 ```
 conicrypt-lab/
-├── core/                       # Motor matemático (C)
+├── Core/                       # Motor matemático (C)
 │   ├── src/
-│   │   ├── main.c              # I/O JSON (stdin/stdout). Modos: --conic / --ecc
+│   │   ├── main.c              # I/O JSON 
 │   │   ├── conics.c/.h         # Δ=B^2−4AC, tipo, muestreo simple
-│   │   ├── ecc.c/.h            # inv_mod, add, double, scalar_mul (p pequeño)
-│   │   └── utils.c/.h          # gcd, pow_mod, parse seguro
+│   │   ├── ecc.c/.h            # inv_mod, add, double,
+│   │   └── utils.c/.h          # gcd, pow_mod, 
 │   ├── bin/                    # ejecutable conicrypt
 │   └── Makefile
-├── app/                        # Desktop: Tauri (backend) + React/Three.js (UI)
+├── App/                        # Desktop: Tauri (backend) + React/Three.js (UI)
 │   ├── src/                    # UI
 │   │   ├── main.tsx, App.tsx
 │   │   ├── pages/{Home,Conics,ECC}Page.tsx
@@ -75,23 +75,23 @@ conicrypt-lab/
 │       ├── main.rs             # WS local (p.ej. ws://127.0.0.1:9090)
 │       ├── ws.rs               # routing WS
 │       └── process.rs          # spawn de core/bin/conicrypt
-├── python/                     # Ploteo opcional
+├── Python/                     # Ploteo opcional
 │   ├── plot_conics.py
 │   ├── plot_ecc.py
 │   └── requirements.txt
-├── scripts/                    # Automatización
-│   ├── run_all.sh              # build core + lanzar app (tauri dev)
+├── Scripts/                    # Automatización
+│   ├── run_all.sh              # build core + lanzar app 
 │   ├── build_all.sh            # empaquetado
 │   └── clean.sh
-├── data/                       # JSON/CSV (ejemplo y salidas)
-├── docs/
-│   └── ConiCryptLab_Arquitectura.png
-└── docker-compose.yml          # ejecución reproducible (opcional)
+├── Data/                       # JSON/CSV
+├── Docs/
+└── Docker
+    └──  docker-compose.yml     # orquestar
 ```
 
 ---
 
-## 🧩 Módulos
+##  Módulos
 
 | Módulo | Descripción | Tech |
 |---|---|---|
@@ -144,7 +144,7 @@ flowchart TD
 
 ---
 
-## 🚀 Puesta en marcha
+##  Puesta en marcha
 
 **Requisitos**
 - WSL2 (Ubuntu) o Linux nativo
@@ -172,7 +172,7 @@ docker compose up --build
 
 ---
 
-## 🔁 WebSocket & IPC (Tauri backend)
+##  WebSocket & IPC (Tauri y backend)
 
 | Componente           | Funcionalidad                                                                 |
 |----------------------|-------------------------------------------------------------------------------|
@@ -207,7 +207,7 @@ docker compose up --build
 
 ---
 
-## 📡 Eventos WS (UI ↔ Backend)
+##  Eventos WS (UI ↔ Backend)
 
 ```json
 // UI -> Backend
@@ -222,20 +222,17 @@ docker compose up --build
 
 ---
 
-## 🧪 Calidad y estilo
+##  Calidad y estilo
 - C: `-O2 -Wall -Wextra -Wpedantic -std=c11`  
 - TypeScript estricto + ESLint/Prettier  
 - PRs desde `feat/*`, `fix/*`, `docs/*` con revisión
 
 ---
 
-## 🗺️ Roadmap
+##  Roadmap
 - Marching squares y muestreo adaptativo  
 - Exportación SVG desde Three.js  
 - ECC con primos mayores (optimización)  
 - Plantillas LaTeX para informes automáticos
 
 ---
-
-## 📄 Licencia
-MIT
