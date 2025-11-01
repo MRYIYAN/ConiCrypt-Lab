@@ -11,6 +11,7 @@ bool is_prime_simple(int64_t n);
 
 // JSON parsing helpers
 bool parse_json_int(const char *json, const char *key, int64_t *out);
+bool parse_json_double(const char *json, const char *key, double *out);
 bool parse_json_bool(const char *json, const char *key, bool *out);
 
 #endif // UTILS_H

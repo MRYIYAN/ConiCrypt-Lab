@@ -50,27 +50,27 @@ int process_conic_mode(const char *input) {
     ConicParams params;
     
     // Parse JSON input - simple parser for our needs
-    if (!parse_json_int(input, "A", (int64_t*)&params.A)) {
+    if (!parse_json_double(input, "A", &params.A)) {
         fprintf(stderr, "Error: Missing or invalid 'A' parameter\n");
         return 1;
     }
-    if (!parse_json_int(input, "B", (int64_t*)&params.B)) {
+    if (!parse_json_double(input, "B", &params.B)) {
         fprintf(stderr, "Error: Missing or invalid 'B' parameter\n");
         return 1;
     }
-    if (!parse_json_int(input, "C", (int64_t*)&params.C)) {
+    if (!parse_json_double(input, "C", &params.C)) {
         fprintf(stderr, "Error: Missing or invalid 'C' parameter\n");
         return 1;
     }
-    if (!parse_json_int(input, "D", (int64_t*)&params.D)) {
+    if (!parse_json_double(input, "D", &params.D)) {
         fprintf(stderr, "Error: Missing or invalid 'D' parameter\n");
         return 1;
     }
-    if (!parse_json_int(input, "E", (int64_t*)&params.E)) {
+    if (!parse_json_double(input, "E", &params.E)) {
         fprintf(stderr, "Error: Missing or invalid 'E' parameter\n");
         return 1;
     }
-    if (!parse_json_int(input, "F", (int64_t*)&params.F)) {
+    if (!parse_json_double(input, "F", &params.F)) {
         fprintf(stderr, "Error: Missing or invalid 'F' parameter\n");
         return 1;
     }

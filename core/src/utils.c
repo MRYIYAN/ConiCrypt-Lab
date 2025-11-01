@@ -58,6 +58,23 @@ bool parse_json_int(const char *json, const char *key, int64_t *out) {
     return true;
 }
 
+// Simple JSON parser for doubles
+bool parse_json_double(const char *json, const char *key, double *out) {
+    char search[256];
+    snprintf(search, sizeof(search), "\"%s\"", key);
+    
+    const char *pos = strstr(json, search);
+    if (!pos) return false;
+    
+    pos += strlen(search);
+    while (*pos && (*pos == ':' || isspace(*pos))) pos++;
+    
+    if (!*pos || (!isdigit(*pos) && *pos != '-' && *pos != '.')) return false;
+    
+    *out = strtod(pos, NULL);
+    return true;
+}
+
 // Simple JSON parser for booleans
 bool parse_json_bool(const char *json, const char *key, bool *out) {
     char search[256];
