@@ -1,2 +1,241 @@
-# ConiCrypt-Lab
-ConiCrypt Lab: mini-laboratorio que conecta cónicas y formas cuadráticas con criptografía ECC. Núcleo en C (clasificación y Δ), scripts Python para gráficas, Bash/WSL para automatización y Docker. Incluye modo CriptoSim (operaciones en curvas elípticas) y dashboard React opcional.
+<div align="center">
+<pre>
+██████╗ ██████╗ ███╗   ██╗██╗ ██████╗██████╗ ██╗   ██╗██████╗ ████████╗     ██╗      █████╗ ██████╗ 
+██╔════╝██╔═══██╗████╗  ██║██║██╔════╝██╔══██╗╚██╗ ██╔╝██╔══██╗╚══██╔══╝     ██║     ██╔══██╗██╔══██╗
+██║     ██║   ██║██╔██╗ ██║██║██║     ██████╔╝ ╚████╔╝ ██████╔╝   ██║        ██║     ███████║██████╔╝
+██║     ██║   ██║██║╚██╗██║██║██║     ██╔══██╗  ╚██╔╝  ██╔═══╝    ██║        ██║     ██╔══██║██╔══██╗
+╚██████╗╚██████╔╝██║ ╚████║██║╚██████╗██║  ██║   ██║   ██║        ██║███████╗███████╗██║  ██║██████╔╝
+ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝ ╚═════╝╚═╝  ╚═╝   ╚═╝   ╚═╝        ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝╚═════╝ 
+</pre>
+</div>
+
+---
+
+ConiCrypt Lab es un **laboratorio de escritorio** que conecta **formas cuadráticas y cónicas** con una simulación básica de **curvas elípticas (ECC)**.  
+Núcleo en **C** (I/O JSON), interfaz **React + Three.js** empaquetada con **Tauri** y comunicación **en tiempo real** via **WebSocket/IPC**.  
+Incluye **Bash** para automatización y **Python** para ploteo opcional. Entorno reproducible en **WSL/Docker**.
+
+---
+
+## 🧰 Tech Stack
+
+### Lenguajes de programación
+<p align="center">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg" width="48" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="48" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="48" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" width="48" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bash/bash-original.svg" width="48" />
+</p>
+
+### Entorno, herramientas y empaquetado
+<p align="center">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg" width="48" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" width="48" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg" width="48" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" width="48" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" width="48" />
+</p>
+
+### Frameworks y librerías
+<p align="center">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="48" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/threejs/threejs-original.svg" width="48" />
+  <img src="https://img.shields.io/badge/Tauri-Desktop-blue?logo=tauri" />
+  <img src="https://img.shields.io/badge/WebSocket-IPC-black" />
+  <img src="https://img.shields.io/badge/Vite-build-purple?logo=vite" />
+  <img src="https://img.shields.io/badge/Matplotlib-plots-green?logo=python" />
+</p>
+
+---
+## 🏛️ Estructura del Proyecto
+
+```
+conicrypt-lab/
+├── core/                       # Motor matemático (C)
+│   ├── src/
+│   │   ├── main.c              # I/O JSON (stdin/stdout). Modos: --conic / --ecc
+│   │   ├── conics.c/.h         # Δ=B^2−4AC, tipo, muestreo simple
+│   │   ├── ecc.c/.h            # inv_mod, add, double, scalar_mul (p pequeño)
+│   │   └── utils.c/.h          # gcd, pow_mod, parse seguro
+│   ├── bin/                    # ejecutable conicrypt
+│   └── Makefile
+├── app/                        # Desktop: Tauri (backend) + React/Three.js (UI)
+│   ├── src/                    # UI
+│   │   ├── main.tsx, App.tsx
+│   │   ├── pages/{Home,Conics,ECC}Page.tsx
+│   │   ├── components/
+│   │   │   ├── layout/{Header,Sidebar,Footer}.tsx
+│   │   │   ├── controls/{ConicControls,ECCControls}.tsx
+│   │   │   └── visualization/{SceneCanvas,AxesGrid,ConicView,ECCView}.tsx
+│   │   ├── lib/{socket.ts,conics.ts,ecc.ts}
+│   │   ├── state/{useAppStore.ts,useConicStore.ts,useECCStore.ts}
+│   │   └── styles/{globals.css,theme.css}
+│   └── src-tauri/              # Backend Tauri (Rust)
+│       ├── main.rs             # WS local (p.ej. ws://127.0.0.1:9090)
+│       ├── ws.rs               # routing WS
+│       └── process.rs          # spawn de core/bin/conicrypt
+├── python/                     # Ploteo opcional
+│   ├── plot_conics.py
+│   ├── plot_ecc.py
+│   └── requirements.txt
+├── scripts/                    # Automatización
+│   ├── run_all.sh              # build core + lanzar app (tauri dev)
+│   ├── build_all.sh            # empaquetado
+│   └── clean.sh
+├── data/                       # JSON/CSV (ejemplo y salidas)
+├── docs/
+│   └── ConiCryptLab_Arquitectura.png
+└── docker-compose.yml          # ejecución reproducible (opcional)
+```
+
+---
+
+## 🧩 Módulos
+
+| Módulo | Descripción | Tech |
+|---|---|---|
+| **Core C** | Clasificación de cónicas (Δ) y ECC (mod p). I/O JSON. | C11, Make |
+| **Tauri Backend** | WS/IPC local; ejecuta el binario C y reenvía resultados. | Rust, tokio |
+| **Dashboard (React)** | UI con Three.js; controla parámetros y renderiza en vivo. | React, R3F, Vite, TS |
+| **Plotter (Python)** | Exporta PNG desde JSON (opcional). | Python, Matplotlib |
+| **Scripts** | `run_all.sh`, `clean.sh`, `build_all.sh`. | Bash |
+| **Docker/WSL** | Entorno reproducible de desarrollo y demo. | Docker, WSL |
+
+---
+
+## 🔁 Orquestación WS/IPC
+
+**Flujo corto:** UI → Tauri WS → `conicrypt` (C) → JSON → Tauri → UI (render).
+
+```mermaid
+flowchart LR
+  A[React UI] -- WS/IPC --> B[Tauri Backend]
+  B -- spawn stdin/stdout JSON --> C[C core: conicrypt]
+  C -- JSON --> B
+  B -- push --> A
+```
+
+**Flujo general del sistema:**
+
+```mermaid
+flowchart TD
+  subgraph R[Runtime: WSL / Docker]
+    A["React UI (Three.js)\nDesktop app (Tauri)"]
+    B["Orchestrator\nTauri backend - WS/IPC"]
+    C["Core C - conicrypt\n--conic / --ecc\nstdin JSON -> stdout JSON"]
+    E["Plotter Python (opcional)\nMatplotlib -> PNG"]
+    D["Data & Logs\n/data JSON-CSV - /output PNG"]
+    F["CLI & Scripts\nrun_all.sh - Makefile"]
+  end
+
+  A -- "Parámetros (A..F / p,a,b,Px,Py,k)" --> B
+  B -- "spawn stdin" --> C
+  C -- "stdout JSON" --> B
+  B -- "evento WS: conic_result / ecc_result" --> A
+  B -- "guardar/leer" --> D
+  B -- "stream datos" --> E
+  F -- "compilar/arrancar" --> B
+  A -- "ejecutar scripts" --> F
+```
+
+**Diagrama PNG (opcional):**  
+`docs/ConiCryptLab_Arquitectura.png`
+
+---
+
+## 🚀 Puesta en marcha
+
+**Requisitos**
+- WSL2 (Ubuntu) o Linux nativo
+- gcc/clang + make
+- Node 18+, npm/pnpm
+- Rust + `tauri-cli`
+- Python 3.10+ (opcional)
+- Docker (opcional)
+
+**Instalación rápida**
+```bash
+# 1) Núcleo C
+make -C core
+
+# 2) App de escritorio
+cd app
+npm install
+npm run tauri dev
+```
+
+**Docker (opcional)**
+```bash
+docker compose up --build
+```
+
+---
+
+## 🔁 WebSocket & IPC (Tauri backend)
+
+| Componente           | Funcionalidad                                                                 |
+|----------------------|-------------------------------------------------------------------------------|
+| **Servidor WS/IPC**  | Canal bidireccional UI↔backend. Recibe parámetros y envía resultados en vivo. |
+| **Proceso C (spawn)**| Ejecuta `core/bin/conicrypt` (`--conic` / `--ecc`), stdin JSON → stdout JSON. |
+| **Errores/Timeout**  | Validación de payload, tiempo máximo de proceso, `{"error":"..."}` a la UI.   |
+| **Persistencia**     | Guarda/lee JSON/CSV y PNG en `/data` y `/output`.                             |
+| **Configuración**    | Parámetros expuestos (muestreo, límites de p, etc.).                          |
+
+---
+
+## 🧮 Núcleo C (conicrypt)
+
+- **Modos**
+  - `--conic`: Δ = B²−4AC, tipo (elipse/circunf./parábola/hipérbola/degenerada) y muestreo.
+  - `--ecc`: ECC mod p (inv_mod, add, double, scalar_mul).
+- **Rendimiento**: C11, `-O2 -Wall -Wextra -Wpedantic`. p pequeño en demo.
+
+**Ejemplos**
+```json
+// --conic (stdin)
+{"A":1,"B":0,"C":1,"D":0,"E":0,"F":-9,"samples":800}
+// stdout
+{"delta":-4,"type":"circle","points":[{"x":0,"y":3}]}
+```
+```json
+// --ecc (stdin)
+{"p":17,"a":2,"b":3,"Px":5,"Py":1,"k":7,"listPoints":true}
+// stdout
+{"valid":true,"Q":{"x":6,"y":3},"points":[{"x":5,"y":1}]}
+```
+
+---
+
+## 📡 Eventos WS (UI ↔ Backend)
+
+```json
+// UI -> Backend
+{"op":"analyze_conic","payload":{"A":..., "B":..., "C":..., "D":..., "E":..., "F":..., "samples":600}}
+{"op":"simulate_ecc","payload":{"p":..., "a":..., "b":..., "Px":..., "Py":..., "k":..., "listPoints":true}}
+
+// Backend -> UI
+{"delta":..., "type":"...", "points":[...]}              // conic_result
+{"valid":true, "Q":{"x":...,"y":...}, "points":[...]}    // ecc_result
+{"error":"mensaje descriptivo"}                          // errores
+```
+
+---
+
+## 🧪 Calidad y estilo
+- C: `-O2 -Wall -Wextra -Wpedantic -std=c11`  
+- TypeScript estricto + ESLint/Prettier  
+- PRs desde `feat/*`, `fix/*`, `docs/*` con revisión
+
+---
+
+## 🗺️ Roadmap
+- Marching squares y muestreo adaptativo  
+- Exportación SVG desde Three.js  
+- ECC con primos mayores (optimización)  
+- Plantillas LaTeX para informes automáticos
+
+---
+
+## 📄 Licencia
+MIT
