@@ -1,0 +1,39 @@
+#================================================================#
+# DOCKERFILE - Núcleo Matemático en C (Desarrollo con AutoBuild)
+#================================================================#
+
+#--------------------------------#
+# Imagen base
+#--------------------------------#
+FROM gcc:13
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+
+# --- Hot reload y utilidades ---
+RUN apt-get update && apt-get install -y inotify-tools make gcc
+
+#--------------------------------#
+# Metadatos
+#--------------------------------#
+LABEL maintainer="ConiCrypt Lab"
+LABEL description="Compilación automática y ejecución del núcleo C (cónicas + ECC)."
+
+#--------------------------------#
+# Directorio de trabajo
+#--------------------------------#
+WORKDIR /app/Core
+
+#--------------------------------#
+# Copiar código fuente
+#--------------------------------#
+COPY ./Core /app/Core
+
+#--------------------------------#
+# Instalar herramientas auxiliares
+#--------------------------------#
+RUN apt-get update && apt-get install -y inotify-tools && rm -rf /var/lib/apt/lists/*
+
+#--------------------------------#
+# Script de compilación en bucle
+#--------------------------------#
+# Detecta cambios en los archivos *.c o *.h y recompila automáticamente
+CMD ["bash", "-c", "echo ' [CORE] Watching source files for changes...'; make -C /app/Core; while inotifywait -e modify,create,delete -r /app/Core/src; do echo ' [CORE] Changes detected — recompiling...'; make -C /app/Core && echo ' [CORE] Build complete.'; done"]

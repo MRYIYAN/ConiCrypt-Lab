@@ -140,7 +140,7 @@ flowchart TD
 ```
 
 **Diagrama PNG (opcional):**  
-`docs/ConiCryptLab_Arquitectura.png`
+`Docs/ConiCryptLab_Arquitectura.png`
 
 ---
 
@@ -184,55 +184,18 @@ docker compose up --build
 
 ---
 
-## 🧮 Núcleo C (conicrypt)
-
-- **Modos**
-  - `--conic`: Δ = B²−4AC, tipo (elipse/circunf./parábola/hipérbola/degenerada) y muestreo.
-  - `--ecc`: ECC mod p (inv_mod, add, double, scalar_mul).
-- **Rendimiento**: C11, `-O2 -Wall -Wextra -Wpedantic`. p pequeño en demo.
-
-**Ejemplos**
-```json
-// --conic (stdin)
-{"A":1,"B":0,"C":1,"D":0,"E":0,"F":-9,"samples":800}
-// stdout
-{"delta":-4,"type":"circle","points":[{"x":0,"y":3}]}
-```
-```json
-// --ecc (stdin)
-{"p":17,"a":2,"b":3,"Px":5,"Py":1,"k":7,"listPoints":true}
-// stdout
-{"valid":true,"Q":{"x":6,"y":3},"points":[{"x":5,"y":1}]}
-```
-
----
-
-##  Eventos WS (UI ↔ Backend)
-
-```json
-// UI -> Backend
-{"op":"analyze_conic","payload":{"A":..., "B":..., "C":..., "D":..., "E":..., "F":..., "samples":600}}
-{"op":"simulate_ecc","payload":{"p":..., "a":..., "b":..., "Px":..., "Py":..., "k":..., "listPoints":true}}
-
-// Backend -> UI
-{"delta":..., "type":"...", "points":[...]}              // conic_result
-{"valid":true, "Q":{"x":...,"y":...}, "points":[...]}    // ecc_result
-{"error":"mensaje descriptivo"}                          // errores
-```
 
 ---
 
 ##  Calidad y estilo
-- C: `-O2 -Wall -Wextra -Wpedantic -std=c11`  
+- C: Doxygen
+- Python: Sphinx
 - TypeScript estricto + ESLint/Prettier  
-- PRs desde `feat/*`, `fix/*`, `docs/*` con revisión
+- Commits con prefijos [FEATURE] [FIX] [IMP]
 
 ---
 
 ##  Roadmap
 - Marching squares y muestreo adaptativo  
 - Exportación SVG desde Three.js  
-- ECC con primos mayores (optimización)  
-- Plantillas LaTeX para informes automáticos
-
 ---

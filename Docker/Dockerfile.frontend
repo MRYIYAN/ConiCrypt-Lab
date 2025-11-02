@@ -1,0 +1,66 @@
+#================================================================#
+# DOCKERFILE - Interfaz de Escritorio (React + Tauri)
+#================================================================#
+
+#--------------------------------#
+# Etapa 1: Build del frontend React
+#--------------------------------#
+FROM node:20 AS build
+RUN apt-get update && apt-get install -y curl pkg-config libssl-dev \
+    && curl https://sh.rustup.rs -sSf | bash -s -- -y
+
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+WORKDIR /app/App
+
+# Copiar código fuente y construir
+COPY ./App /app/App
+RUN npm install && npm run build
+
+#================================================================#
+# Etapa 2: Backend Tauri (Rust)
+#================================================================#
+FROM rust:1.84-slim-bookworm AS tauri
+
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+
+LABEL maintainer="ConiCrypt Lab"
+LABEL description="Backend Tauri con WebSocket/IPC y spawn del núcleo C."
+
+# Dependencias del sistema + Node 20.x (Vite compatible)
+RUN apt-get update && apt-get install -y \
+    libgtk-3-dev \
+    libayatana-appindicator3-dev \
+    libwebkit2gtk-4.1-dev \
+    librsvg2-dev \
+    build-essential \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app/App
+
+#  Limpiar completamente antes de copiar (borra build viejo de Rust)
+RUN rm -rf /app/App
+RUN mkdir -p /app/App
+
+# Copiar el código limpio
+COPY ./App /app/App
+
+# Borrar cualquier target viejo (por si se arrastra de tu host)
+RUN rm -rf /app/App/src-tauri/target
+
+# Instalar dependencias
+RUN npm ci
+
+#  Forzar recompilación limpia de Rust
+RUN cargo clean || true
+
+EXPOSE 1420
+EXPOSE 9090
+
+#--------------------------------#
+# Comando por defecto
+#--------------------------------#
+CMD ["bash", "-c", "rm -rf /app/App/src-tauri/target && cargo clean && npm run tauri dev"]

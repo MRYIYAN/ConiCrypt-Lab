@@ -1,0 +1,88 @@
+version: "3.9"
+
+#================================================================#
+# DOCKER COMPOSE para CONiCRYPT - Laboratório de Criptografia
+#================================================================#
+
+#--------------------------------#
+# Redes internas
+#--------------------------------#
+networks:
+  conicrypt_net:
+    driver: bridge
+
+#--------------------------------#
+# Servicios 
+#--------------------------------#
+services:
+
+  #==============================#
+  # Núcleo matemático en C
+  #==============================#
+  core:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile.core
+    container_name: conicrypt_core
+    volumes:
+      - ../Core:/app/Core
+      - ../Data:/app/Data
+      - ../Output:/app/Output
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    tty: true
+    command: ["bash", "-c", "while true; do make -C /app/Core && sleep 2; done"]
+    # El core se recompila automáticamente en bucle.
+
+  #==============================#
+  # Módulo de visualización Python
+  #==============================#
+  plotter:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile.python
+    container_name: conicrypt_plotter
+    networks:
+      - conicrypt_net
+    volumes:
+      - ../Python:/app/Python
+      - ../Data:/app/Data
+      - ../Output:/app/Output
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    depends_on:
+      - core
+    tty: true
+    command: ["bash", "-c", "while inotifywait -e modify /app/Data/conic.json; do python3 /app/Python/plot_conics.py; done"]
+    # El plotter observa cambios en conic.json y ejecuta el script.
+
+  #==============================#
+  # Interfaz de escritorio React + Tauri
+  #==============================#
+  app:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile.frontend
+    container_name: conicrypt_app
+    networks:
+      - conicrypt_net
+    volumes:
+      - ../App:/app/App
+      - ../Data:/app/Data
+      - ../Output:/app/Output
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - "1421:1420"
+      - "9090:9090"
+    environment:
+      - WS_HOST=core
+      - WS_PORT=9090
+    depends_on:
+      - core
+      - plotter
+    command: ["npm", "run", "tauri", "dev"]
+    # El contenedor App lanza el entorno de escritorio (React + Tauri).
+    # Se conecta vía WebSocket al backend Rust, que a su vez ejecuta el binario C.
+
+#================================================================#

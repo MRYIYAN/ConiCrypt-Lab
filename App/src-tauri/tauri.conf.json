@@ -1,0 +1,30 @@
+{
+  "package": {
+    "productName": "ConiCrypt-Lab",
+    "version": "0.1.0"
+  },
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
+  },
+  "tauri": {
+    "bundle": {
+      "identifier": "com.ian00.conicryptlab",
+      "active": true,
+      "targets": ["deb", "appimage"]
+    },
+    "windows": [
+      {
+        "title": "ConiCrypt-Lab",
+        "width": 1200,
+        "height": 800,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  }
+}
