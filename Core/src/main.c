@@ -1,3 +1,11 @@
+//================================================================//
+// MAIN - Núcleo matemático ConiCrypt Lab (versión inicial)
+//================================================================//
+//
+// Punto de entrada para el núcleo en C. Solo ejecuta una prueba básica
+// de análisis de cónicas y exporta el resultado a JSON.
+// Versión muy inicial para levantar contenedores.
+//
 #include <stdio.h>
 #include <stdlib.h>
 #include "conics.h"
@@ -14,3 +22,4 @@ int main(void) {
 
     return 0;
 }
+

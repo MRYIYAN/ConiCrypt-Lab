@@ -1,5 +1,14 @@
+#================================================================#
+# MAIN - Script de ploteo de cónicas 
+#================================================================#
+
+#--------------------------------#
+# Módulos y dependencias
+#--------------------------------#
 import json
 import matplotlib.pyplot as plt
+import asyncio
+import websockets
 
 try:
     import numpy as np
@@ -11,7 +20,9 @@ except Exception:
 DATA_PATH = "/app/Data/conic.json"
 OUTPUT_PATH = "/app/Output/conic_plot.png"
 
-# Cargar datos
+#--------------------------------#
+# Cargar datos y graficar cónica
+#--------------------------------#
 try:
     with open(DATA_PATH, "r") as f:
         data = json.load(f)
@@ -31,6 +42,16 @@ if has_numpy:
 else:
     import math
     def linspace(a, b, num):
+        """Genera una lista de valores 
+
+        Argumentos:
+            a (float): Valor inicial.
+            b (float): Valor final.
+            num (int): Número de puntos.
+
+        Returns:
+            list: Lista de valores equiespaciados.
+        """
         if num <= 1:
             return [a]
         step = (b - a) / (num - 1)
@@ -39,7 +60,6 @@ else:
     scale = math.sqrt(abs((data["delta"]) / 4.0))
     y = [scale * xi for xi in x]
 
-# Graficar
 plt.figure(figsize=(6, 4))
 plt.plot(x, y, label=f'{data["type"]}')
 plt.title("Conic visualization")
@@ -48,3 +68,30 @@ plt.grid(True)
 plt.savefig(OUTPUT_PATH)
 
 print(f"[OK] Gráfica guardada en {OUTPUT_PATH}")
+
+# =====================================================
+# Notificación al WebSocket de Tauri 
+# =====================================================
+
+async def notify_update():
+    """
+    Envía una notificación al WebSocket de Tauri.
+
+    Conecta a ws 9090 y envía un evento JSON.
+    Útil para avisar a la UI que la gráfica ha sido actualizada.
+
+    Returns:
+        None
+    """
+    uri = "ws://host.docker.internal:9090"
+    payload = json.dumps({"event": "update_conic"})
+    try:
+        async with websockets.connect(uri) as ws:
+            await ws.send(payload)
+            print("[plotter]  Notificación enviada:", payload)
+    except Exception as e:
+        import sys
+        print("[plotter]  Error al notificar:", e, file=sys.stderr)
+
+if __name__ == "__main__":
+    asyncio.run(notify_update())

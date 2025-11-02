@@ -1,14 +1,57 @@
-import { useState } from "react";
+//================================================================//
+// MAIN - Entry point ConiCrypt Lab Desktop App 
+//================================================================//
+//
+// Este archivo define el componente principal de la aplicación de escritorio
+//
+// - Escucha eventos WebSocket en el puerto 9090 para recibir notificaciones en tiempo real.
+// - Actualiza la UI cuando se recibe el evento "update_conic" 
+// - Incluye un formulario que envía datos al backend Rust usando Tauri invoke.
+// - Presenta enlaces y logos de Vite, Tauri y React.
+//
+// Este componente es el punto de entrada visual e interactivo de la app suerte :)
+//
+//--------------------------------//
+// Módulos y dependencias
+//--------------------------------//
+import { useState, useEffect } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api";
 import "./App.css";
 
+/**
+ * Componente principal de la aplicación
+ * 
+ * - Escucha eventos WebSocket en 9090
+ * - Refresca la UI con "update_conic"
+ * - Expone un formulario para saludar usando Tauri invoke.
+ * 
+ * @returns JSX.Element
+ */
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
 
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:9090");
+    ws.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data);
+        if (data.event === "update_conic") {
+          console.log("update_conic recibido!");
+          // Aquí refrescá el JSON o re-renderizara el gráfico
+        }
+      } catch (err) {
+        console.error("Error WS:", err);
+      }
+    };
+    return () => ws.close();
+  }, []);
+
+  /**
+   * Envía el nombre al backend Rust usando Tauri invoke.
+   */
   async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
     setGreetMsg(await invoke("greet", { name }));
   }
 
