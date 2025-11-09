@@ -19,11 +19,10 @@ tauri-build = { version = "1.4", features = [] }
 
 [dependencies]
 tauri = { version = "1.4", features = [] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1", features = ["full"] } # Cambiado a "full" para soporte completo
+futures-util = "0.3"
 tokio-tungstenite = "0.21"
 tungstenite = "0.21"
-futures-util = "0.3"
-anyhow = "1"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# reqwest = { version = "0.12", features = ["json", "rustls-tls"] } # <- solo si llamas HTTP
+# urlencoding = "2"                                                 # <- útil para querystrings
 

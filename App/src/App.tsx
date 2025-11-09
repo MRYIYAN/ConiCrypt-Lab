@@ -4,7 +4,7 @@
 //
 // Este archivo define el componente principal de la aplicación de escritorio
 //
-// - Escucha eventos WebSocket en el puerto 9090 para recibir notificaciones en tiempo real.
+// - Escucha eventos WebSocket en el puerto 9191 para recibir notificaciones en tiempo real.
 // - Actualiza la UI cuando se recibe el evento "update_conic" 
 // - Incluye un formulario que envía datos al backend Rust usando Tauri invoke.
 // - Presenta enlaces y logos de Vite, Tauri y React.
@@ -22,7 +22,7 @@ import "./App.css";
 /**
  * Componente principal de la aplicación
  * 
- * - Escucha eventos WebSocket en 9090
+ * - Escucha eventos WebSocket en 9191
  * - Refresca la UI con "update_conic"
  * - Expone un formulario para saludar usando Tauri invoke.
  * 

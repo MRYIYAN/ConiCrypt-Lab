@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 //================================================================//
 // MAIN - Entry point ConiCrypt Lab Desktop App (Tauri + WS)
 //================================================================//
@@ -5,13 +7,15 @@
 //--------------------------------//
 // Módulos y dependencias
 //--------------------------------//
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+use tauri_appconicrypt_lab_lib as lib; 
 mod ws;
 
-//--------------------------------//
-// Comando Tauri: ping
-//--------------------------------//
+use crate::lib::Config;
+
+/// Comando Tauri: ping
+///
+/// Este comando es invocado desde el frontend y retorna "pong".
 #[tauri::command]
 fn ping() -> String {
     "pong".into()
@@ -20,30 +24,36 @@ fn ping() -> String {
 //--------------------------------//
 // Función principal
 //--------------------------------//
-/// 
-/// - Lanza el servidor WebSocket en el puerto 9090.
-/// - Inicializa la app Tauri y expone el comando `ping`.
-/// - El servidor WS es accesible desde host.docker.internal.
 ///
-/// # Uso
-/// Ejecuta la app y el backend WS en paralelo.
+/// - Espera a que los backends (core y plotter) estén disponibles.
+/// - Lanza el servidor WebSocket en segundo plano.
+/// - Inicia la aplicación Tauri para la interfaz de usuario.
 ///
-//--------------------------------------------------//
+/// # Detalles
+/// - El servidor WebSocket escucha en el puerto configurado.
+/// - La aplicación Tauri expone comandos al frontend.
 #[tokio::main]
 async fn main() {
-    // Lanza el servidor WebSocket
-    let ws_task = tokio::spawn(async {
-        let addr = "0.0.0.0:9090".parse().unwrap(); // accesible desde host.docker 
-        if let Err(e) = ws::run_ws(addr).await {
-            eprintln!("[WS] error: {e:?}");
-        }
+    // Esperar backends antes de iniciar
+    let config = Config::load();
+    config.wait_for_backends().await;
+
+    println!(
+        "[INIT] Configuración cargada:\n  CORE_URL = {}\n  PLOTTER_URL = {}\n  WS = {}",
+        config.core_url,
+        config.plotter_url,
+        config.ws_address()
+    );
+
+    // Lanzar servidor WS asíncrono
+    let ws_config = config.clone();
+    tokio::spawn(async move {
+        ws::start_ws_server(ws_config).await;
     });
 
+    // Iniciar Tauri
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![ping])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-
-    let _ = ws_task.await;
 }
-

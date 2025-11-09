@@ -24,6 +24,10 @@ services:
       context: ..
       dockerfile: Docker/Dockerfile.core
     container_name: conicrypt_core
+    networks:
+      - conicrypt_net
+    ports:
+      - "5000:5000"     #  expone puerto 5000 al host
     volumes:
       - ../Core:/app/Core
       - ../Data:/app/Data
@@ -31,8 +35,16 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
     tty: true
-    command: ["bash", "-c", "while true; do make -C /app/Core && sleep 2; done"]
-    # El core se recompila automáticamente en bucle.
+    command: >
+      bash -c 'last_build=0;
+      while true; do
+        new_time=$$(find /app/Core/src -type f -printf "%T@\n" | sort -n | tail -1);
+        if [ "$$new_time" != "$$last_build" ]; then
+          echo "[CORE] Cambios detectados, recompilando...";
+          make -C /app/Core && last_build=$$new_time;
+        fi;
+        sleep 2;
+      done'
 
   #==============================#
   # Módulo de visualización Python
@@ -44,6 +56,8 @@ services:
     container_name: conicrypt_plotter
     networks:
       - conicrypt_net
+    ports:
+      - "5001:5001"     #  expone puerto 5001 al host
     volumes:
       - ../Python:/app/Python
       - ../Data:/app/Data
@@ -54,7 +68,6 @@ services:
       - core
     tty: true
     command: ["bash", "-c", "while inotifywait -e modify /app/Data/conic.json; do python3 /app/Python/plot_conics.py; done"]
-    # El plotter observa cambios en conic.json y ejecuta el script.
 
   #==============================#
   # Interfaz de escritorio React + Tauri
@@ -66,23 +79,29 @@ services:
     container_name: conicrypt_app
     networks:
       - conicrypt_net
+    ports:
+      - "1421:1420"  # solo puerto del front si lo usas
+    environment:
+      - WS_HOST=host.docker.internal
+      - WS_PORT=9191
+      - CORE_URL=http://host.docker.internal:5000   #  para Tauri/React
+      - PLOTTER_URL=http://host.docker.internal:5001
     volumes:
       - ../App:/app/App
       - ../Data:/app/Data
       - ../Output:/app/Output
+      - ../Docker/startup_app.sh:/usr/local/bin/startup_app.sh
     extra_hosts:
       - host.docker.internal:host-gateway
-    ports:
-      - "1421:1420"
-      - "9090:9090"
-    environment:
-      - WS_HOST=core
-      - WS_PORT=9090
     depends_on:
       - core
       - plotter
-    command: ["npm", "run", "tauri", "dev"]
-    # El contenedor App lanza el entorno de escritorio (React + Tauri).
-    # Se conecta vía WebSocket al backend Rust, que a su vez ejecuta el binario C.
-
-#================================================================#
+    tty: true
+    stdin_open: true
+    command: >
+      bash -c '
+      echo "====================================================";
+      echo "   Iniciando CONiCRYPT-LAB (React + Tauri + WS)";
+      echo "====================================================";
+      chmod +x /usr/local/bin/startup_app.sh;
+      /usr/local/bin/startup_app.sh'

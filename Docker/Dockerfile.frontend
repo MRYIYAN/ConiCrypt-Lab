@@ -6,61 +6,50 @@
 # Etapa 1: Build del frontend React
 #--------------------------------#
 FROM node:20 AS build
-RUN apt-get update && apt-get install -y curl pkg-config libssl-dev \
-    && curl https://sh.rustup.rs -sSf | bash -s -- -y
 
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Instala dependencias del sistema necesarias para compilar el front
+RUN apt-get update && apt-get install -y \
+    curl wget build-essential pkg-config libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/App
-
-# Copiar código fuente y construir
 COPY ./App /app/App
 RUN npm install && npm run build
 
 #================================================================#
 # Etapa 2: Backend Tauri (Rust)
 #================================================================#
-FROM rust:1.84-slim-bookworm AS tauri
+FROM node:20 AS tauri
 
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
-
-LABEL maintainer="ConiCrypt Lab"
-LABEL description="Backend Tauri con WebSocket/IPC y spawn del núcleo C."
-
-# Dependencias del sistema + Node 20.x (Vite compatible)
+# Dependencias del sistema para Tauri (GTK, WebKit, JavaScriptCore y libsoup)
 RUN apt-get update && apt-get install -y \
-    libgtk-3-dev \
-    libayatana-appindicator3-dev \
-    libwebkit2gtk-4.1-dev \
-    librsvg2-dev \
-    build-essential \
-    curl \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
+    curl wget build-essential pkg-config libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
+    libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup2.4-dev \
+    iproute2 \                             
+    && ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/javascriptcoregtk-4.1.pc /usr/lib/x86_64-linux-gnu/pkgconfig/javascriptcoregtk-4.0.pc \
+    && ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.1.pc /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc \
+    # 🔧 Symlinks adicionales para el linker (las .so que Rust busca)
+    && ln -sf /usr/lib/x86_64-linux-gnu/libwebkit2gtk-4.1.so /usr/lib/x86_64-linux-gnu/libwebkit2gtk-4.0.so \
+    && ln -sf /usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so /usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.0.so \
     && rm -rf /var/lib/apt/lists/*
+
+# --- Instala Rust nightly (con soporte edition2024) ---
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN rustup default nightly && rustc --version && cargo --version
 
 WORKDIR /app/App
 
-#  Limpiar completamente antes de copiar (borra build viejo de Rust)
-RUN rm -rf /app/App
-RUN mkdir -p /app/App
-
-# Copiar el código limpio
+# Copiar el código (React + Tauri)
 COPY ./App /app/App
 
-# Borrar cualquier target viejo (por si se arrastra de tu host)
-RUN rm -rf /app/App/src-tauri/target
-
-# Instalar dependencias
-RUN npm ci
-
-#  Forzar recompilación limpia de Rust
-RUN cargo clean || true
+# Limpieza y dependencias
+RUN rm -rf /app/App/src-tauri/target && npm ci
 
 EXPOSE 1420
-EXPOSE 9090
+EXPOSE 9191
 
 #--------------------------------#
 # Comando por defecto
 #--------------------------------#
-CMD ["bash", "-c", "rm -rf /app/App/src-tauri/target && cargo clean && npm run tauri dev"]
+CMD ["bash", "-c", "npm run tauri dev"]

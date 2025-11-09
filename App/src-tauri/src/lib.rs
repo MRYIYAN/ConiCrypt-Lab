@@ -1,16 +1,103 @@
-//=========================================//
-// LIB - Comandos auxiliares (Tauri v1.4)
-//=========================================//
+//----------------------------------------------------------------//
+// LIB - Configuración y utilidades comunes (ConiCrypt Lab)
+//----------------------------------------------------------------//
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+use std::{env, io::Write, time::Duration};
+use tokio::{net::TcpStream, time::sleep};
+
+/// Configuración centralizada para la aplicación.
+///
+/// Carga valores desde las variables de entorno con valores por defecto
+/// para desarrollo local. Proporciona métodos para obtener direcciones
+/// y esperar a que los servicios backend estén disponibles.
+#[derive(Clone, Debug)]
+pub struct Config {
+    /// URL del servicio Core (HTTP).
+    pub core_url: String,
+    /// URL del servicio Plotter (HTTP).
+    pub plotter_url: String,
+    /// Host para el servidor WebSocket.
+    pub ws_host: String,
+    /// Puerto del servidor WebSocket (texto para interpolar).
+    pub ws_port: String,
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+impl Config {
+    /// Carga la configuración desde las variables de entorno o usa valores por defecto.
+    ///
+    /// Valores por defecto:
+    /// - CORE_URL: http://127.0.0.1:5000
+    /// - PLOTTER_URL: http://127.0.0.1:5001
+    /// - WS_HOST: 127.0.0.1
+    /// - WS_PORT: 9191
+    pub fn load() -> Self {
+        Self {
+            core_url: env::var("CORE_URL").unwrap_or_else(|_| "http://127.0.0.1:5000".into()),
+            plotter_url: env::var("PLOTTER_URL").unwrap_or_else(|_| "http://127.0.0.1:5001".into()),
+            ws_host: env::var("WS_HOST").unwrap_or_else(|_| "127.0.0.1".into()),
+            ws_port: env::var("WS_PORT").unwrap_or_else(|_| "9191".into()),
+        }
+    }
+
+    /// Construye la dirección completa del WebSocket (ej. ws://host:port).
+    pub fn ws_address(&self) -> String {
+        format!("ws://{}:{}", self.ws_host, self.ws_port)
+    }
+
+    /// Extrae "host:port" de una URL como "http://host:puerto/…".
+    ///
+    /// Si no hay puerto en la URL, usa el puerto por defecto.
+    fn host_port_from_url(url: &str, default_port: &str) -> String {
+        let trimmed = url
+            .trim_start_matches("http://")
+            .trim_start_matches("https://");
+        let first_seg = trimmed.split('/').next().unwrap_or(trimmed);
+        if first_seg.contains(':') {
+            first_seg.to_string()
+        } else {
+            format!("{}:{}", first_seg, default_port)
+        }
+    }
+
+    /// Devuelve la dirección del servicio Core en formato "host:port".
+    pub fn core_addr(&self) -> String {
+        Self::host_port_from_url(&self.core_url, "5000")
+    }
+
+    /// Devuelve la dirección del servicio Plotter en formato "host:port".
+    pub fn plotter_addr(&self) -> String {
+        Self::host_port_from_url(&self.plotter_url, "5001")
+    }
+
+    /// Espera a que los servicios backend (Core y Plotter) estén disponibles.
+    ///
+    /// Realiza hasta 30 intentos de conexión TCP a los servicios backend.
+    /// Si no logra conectarse, aborta el proceso con un mensaje de error.
+    pub async fn wait_for_backends(&self) {
+        println!("[INIT] Esperando backend Docker (core/plotter)...");
+        for attempt in 1..=30 {
+            let core_up = TcpStream::connect(self.core_addr()).await.is_ok();
+            let plot_up = TcpStream::connect(self.plotter_addr()).await.is_ok();
+
+            if core_up && plot_up {
+                println!("[OK] Backend Docker disponible ");
+                return;
+            }
+
+            if attempt == 1 {
+                println!(
+                    "[WAIT] Aguardando servicios en {} y {} …",
+                    self.core_addr(),
+                    self.plotter_addr()
+                );
+            }
+            print!(".");
+            let _ = std::io::stdout().flush();
+            sleep(Duration::from_secs(2)).await;
+        }
+
+        eprintln!("\n[ERROR] Backend Docker no disponible ");
+        eprintln!("Asegúrate de ejecutar: docker compose up -d");
+        std::process::exit(1);
+    }
 }

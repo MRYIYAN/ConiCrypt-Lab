@@ -77,13 +77,13 @@ async def notify_update():
     """
     Envía una notificación al WebSocket de Tauri.
 
-    Conecta a ws 9090 y envía un evento JSON.
+    Conecta a ws 9191 y envía un evento JSON.
     Útil para avisar a la UI que la gráfica ha sido actualizada.
 
     Returns:
         None
     """
-    uri = "ws://host.docker.internal:9090"
+    uri = "ws://host.docker.internal:9191"
     payload = json.dumps({"event": "update_conic"})
     try:
         async with websockets.connect(uri) as ws:

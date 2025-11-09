@@ -72,7 +72,7 @@ conicrypt-lab/
 │   │   ├── state/{useAppStore.ts,useConicStore.ts,useECCStore.ts}
 │   │   └── styles/{globals.css,theme.css}
 │   └── src-tauri/              # Backend Tauri (Rust)
-│       ├── main.rs             # WS local (p.ej. ws://127.0.0.1:9090)
+│       ├── main.rs             # WS local (p.ej. ws://127.0.0.1:9191)
 │       ├── ws.rs               # routing WS
 │       └── process.rs          # spawn de core/bin/conicrypt
 ├── Python/                     # Ploteo opcional
