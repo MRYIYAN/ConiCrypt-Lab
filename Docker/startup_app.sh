@@ -29,7 +29,7 @@ echo -e "\033[1;32m Inicialización completada.\033[0m\n"
 # =====================================================
 # Compilación Tauri
 # =====================================================
-echo -e "\033[1;35m🔧 Compilando backend Rust (Tauri)...\033[0m"
+echo -e "\033[1;35m Compilando backend Rust (Tauri)...\033[0m"
 cd /app/App/src-tauri && cargo build --quiet \
   && echo -e "\033[1;32m Compilado correctamente.\033[0m" \
   || echo -e "\033[1;31m Error en compilación Rust.\033[0m"
@@ -41,7 +41,7 @@ sleep 1
 # =====================================================
 echo -e "\033[1;36m🧩 Verificando módulos GTK/WebKit/JSC...\033[0m"
 for lib in /usr/lib/x86_64-linux-gnu/libwebkit2gtk* /usr/lib/x86_64-linux-gnu/libjavascriptcore*; do
-  [ -f "$lib" ] && echo "   📦 $(basename "$lib")"
+  [ -f "$lib" ] && echo "    $(basename "$lib")"
 done
 echo ""
 sleep 1
@@ -49,7 +49,7 @@ sleep 1
 # =====================================================
 # Comprobación de red interna y WS (siempre afirmativos)
 # =====================================================
-echo -e "\033[1;34m🌐 Comprobando red interna y WebSocket...\033[0m"
+echo -e "\033[1;34m Comprobando red interna y WebSocket...\033[0m"
 echo -e "    Docker bridge activo."
 echo -e "    WS: activo (backend y Rust operativo)."
 echo ""
