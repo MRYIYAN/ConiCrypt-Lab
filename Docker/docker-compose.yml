@@ -90,7 +90,7 @@ services:
       - ../App:/app/App
       - ../Data:/app/Data
       - ../Output:/app/Output
-      - ../Docker/startup_app.sh:/usr/local/bin/startup_app.sh
+      - ./startup_app.sh:/usr/local/bin/startup_app.sh
     extra_hosts:
       - host.docker.internal:host-gateway
     depends_on:
