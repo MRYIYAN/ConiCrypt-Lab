@@ -1,94 +1,77 @@
-//================================================================//
-// MAIN - Entry point ConiCrypt Lab Desktop App 
-//================================================================//
-//
-// Este archivo define el componente principal de la aplicación de escritorio
-//
-// - Escucha eventos WebSocket en el puerto 9191 para recibir notificaciones en tiempo real.
-// - Actualiza la UI cuando se recibe el evento "update_conic" 
-// - Incluye un formulario que envía datos al backend Rust usando Tauri invoke.
-// - Presenta enlaces y logos de Vite, Tauri y React.
-//
-// Este componente es el punto de entrada visual e interactivo de la app suerte :)
-//
-//--------------------------------//
-// Módulos y dependencias
-//--------------------------------//
-import { useState, useEffect } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api";
-import "./App.css";
+//===========================================================================//
+//                           APLICACIÓN PRINCIPAL                             //
+//===========================================================================//
+//  Componente raíz que define la arquitectura de capas de la UI:
+//  - Capa de fondo (WireframeGeometryBackground)                          z-0
+//  - Vista principal (Dashboard / ConicAnalysis)                          z-10
+//  - Dock flotante y Terminal                                             z-30+
+//  Gestiona el estado de navegación (View) y propaga cambios al Dock y al
+//  Dashboard. Mantiene el cursor personalizado y el canvas sin scroll.
+//===========================================================================//
 
-/**
- * Componente principal de la aplicación
- * 
- * - Escucha eventos WebSocket en 9191
- * - Refresca la UI con "update_conic"
- * - Expone un formulario para saludar usando Tauri invoke.
- * 
- * @returns JSX.Element
- */
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+import { useState } from "react";
+import { FloatingDock } from "./components/nav/FloatingDock";
+import { Terminal } from "./components/overlay/Terminal";
+import { Dashboard } from "./modules/dashboard/Dashboard";
+import { ConicAnalysis } from "./modules/conic-analysis/ConicAnalysis";
+import { WireframeGeometryBackground } from "./components/visual/WireframeGeometryBackground";
+import { CustomCursor } from "./components/visual/CustomCursor";
 
-  useEffect(() => {
-    const ws = new WebSocket("ws://localhost:9090");
-    ws.onmessage = (ev) => {
-      try {
-        const data = JSON.parse(ev.data);
-        if (data.event === "update_conic") {
-          console.log("update_conic recibido!");
-          // Aquí refrescá el JSON o re-renderizara el gráfico
-        }
-      } catch (err) {
-        console.error("Error WS:", err);
-      }
-    };
-    return () => ws.close();
-  }, []);
+export type View =
+  | "dashboard"
+  | "conics"
+  | "ecc"
+  | "history"
+  | "settings";
 
-  /**
-   * Envía el nombre al backend Rust usando Tauri invoke.
-   */
-  async function greet() {
-    setGreetMsg(await invoke("greet", { name }));
-  }
+//---------------------------------------------------------------------------//
+// Estado de navegación de la aplicación (vista activa)
+// - Controlado en App para evitar estados duplicados en subcomponentes.
+// - Se pasa a Dashboard y FloatingDock vía props.
+//---------------------------------------------------------------------------//
+export default function App() {
+  const [view, setView] = useState<View>("dashboard");
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div
+      id="scene"
+      className="relative w-screen h-screen overflow-hidden"
+      style={{ cursor: "none" }}
+    >
+      {/* CAPA DE FONDO (no interactiva)
+         - pointer-events-none evita bloquear la UI.
+         - z-0 garantiza que la UI quede por encima. */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <WireframeGeometryBackground />
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+      {/* VISTA PRINCIPAL (según estado 'view')
+         - Solo renderiza el módulo activo.
+         - Dashboard emite onNavigate("conics") para cambiar a ConicAnalysis. */}
+      <div className="absolute inset-0 z-10">
+        {view === "dashboard" && (
+          <Dashboard onNavigate={setView} />
+        )}
+
+        {view === "conics" && <ConicAnalysis />}
+      </div>
+
+      {/* DOCK FLOTANTE (controlado por props: activeView / onChangeView)
+         - Usa IDs alineados con el tipo View.
+         - No guarda estado interno de pestañas; App es la fuente de verdad. */}
+      <FloatingDock
+        activeView={view}
+        onChangeView={setView}
+      />
+
+      {/* TERMINAL + CURSOR PERSONALIZADO
+         - Terminal se muestra en la capa superior.
+         - CustomCursor desactiva el cursor del sistema y dibuja uno propio. */}
+      <div className="fixed top-12 left-12 z-40">
+        <Terminal />
+      </div>
+
+      <CustomCursor />
+    </div>
   );
 }
-
-export default App;

@@ -1,0 +1,77 @@
+{
+  "package": {
+    "productName": "ConiCrypt-Lab",
+    "version": "0.1.0",
+    "description": "Aplicación de escritorio para análisis y visualización de criptografía.",
+    "repository": "https://github.com/tu_usuario/tu_repositorio",
+    "keywords": [
+      "Tauri",
+      "React",
+      "TypeScript"
+    ],
+    "author": "Tu Nombre",
+    "license": "MIT",
+    "dependencies": {
+      "framer-motion": "^4.1.17",
+      "inter": "3.19.0",
+      "lucide-react": "^0.1.6",
+      "tailwindcss": "^2.2.19",
+      "typescript": "^4.4.4",
+      "vite": "^2.6.4",
+      "react": "^17.0.2",
+      "react-dom": "^17.0.2"
+    },
+    "devDependencies": {
+      "@types/react": "^17.0.2",
+      "@types/react-dom": "^17.0.2",
+      "vite-plugin-windicss": "^1.18.13"
+    }
+  },
+  "tauri": {
+    "bundle": {
+      "identifier": "com.yourname.conicryptlab",
+      "icon": [
+        "icons/icon.png",
+        "icons/icon@2x.png",
+        "icons/icon-512.png"
+      ],
+      "resources": [],
+      "category": "public.app-category.developer-tools",
+      "shortDescription": "Herramienta para análisis criptográfico.",
+      "longDescription": "ConiCrypt-Lab es una aplicación de escritorio para el análisis y visualización de criptografía, diseñada para ser una herramienta completa para investigadores y entusiastas de la criptografía.",
+      "name": "ConiCrypt Lab"
+    },
+    "tauri": {
+      "windows": [
+        {
+          "label": "main",
+          "title": "ConiCrypt-Lab",
+          "width": 1200,
+          "height": 800,
+          "fullscreen": false,
+          "resizable": true,
+          "decorations": true,
+          "center": true,
+          "titleBarStyle": "VisibleInset"
+        }
+      ],
+      "systemTray": {
+        "iconPath": "icons/icon.png",
+        "menu": [
+          {
+            "id": "show",
+            "title": "Mostrar"
+          },
+          {
+            "id": "hide",
+            "title": "Ocultar"
+          },
+          {
+            "id": "quit",
+            "title": "Salir"
+          }
+        ]
+      }
+    }
+  }
+}

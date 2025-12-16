@@ -1,0 +1,76 @@
+@reference "tailwindcss";
+
+
+/* Nota: Este archivo usa Tailwind @apply y requiere el plugin de PostCSS (tailwindcss).
+   Si VS Code muestra 'Unknown at rule @apply', configura css.lint.unknownAtRules en "ignore". */
+
+/* Root: fijo y centrado en la parte inferior */
+.root {
+  @apply fixed bottom-8 left-1/2 z-40;
+  transform: translateX(-50%);
+  margin-left: -180px; /* offset fino para el ancho del dock */
+}
+
+/* Dock: contenedor visual con gradiente, blur y sombras */
+.dock {
+  @apply relative rounded-3xl;
+  background: linear-gradient(135deg, rgba(18, 18, 35, 0.95), rgba(25, 25, 45, 0.95));
+  backdrop-filter: blur(40px) saturate(150%);
+  border: 1px solid rgba(59, 75, 255, 0.25);
+  padding: 12px 16px;
+  box-shadow:
+    0 0 0 1px rgba(59, 75, 255, 0.15),
+    0 16px 48px rgba(0, 0, 0, 0.7),
+    0 0 80px rgba(59, 75, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Overlay animada: gradiente radial suave */
+.overlay {
+  @apply absolute inset-0 rounded-3xl pointer-events-none opacity-40;
+  background: radial-gradient(circle at 50% 50%, rgba(59, 75, 255, 0.2), transparent 70%);
+}
+
+/* Glow de bordes para refuerzo de volumen */
+.glow {
+  @apply absolute -inset-0.5 rounded-3xl pointer-events-none opacity-50;
+  background: linear-gradient(90deg, transparent, rgba(59, 75, 255, 0.1), transparent);
+  filter: blur(8px);
+}
+
+/* Contenedor de ítems del dock */
+.container {
+  @apply relative flex items-center gap-2;
+}
+
+/* Ítem base: botón con tamaño fijo y transición */
+.item {
+  @apply relative p-3 rounded-2xl transition-all flex items-center justify-center;
+  width: 52px;
+  height: 52px;
+}
+
+/* Estado activo: color, borde y glow interno */
+.itemActive {
+  color: #FFFFFF;
+  background-color: rgba(59, 75, 255, 0.4);
+  border: 1px solid rgba(59, 75, 255, 0.5);
+  box-shadow: 0 0 20px rgba(59, 75, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Estado inactivo: color tenue y sin borde/glow */
+.itemInactive {
+  color: #6C6C8C;
+  background-color: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+/* Indicador activo: pequeño punto con glow en la base del botón */
+.activeIndicator {
+  @apply absolute -bottom-1.5 left-1/2 w-1.5 h-1.5 rounded-full;
+  background-color: #3B4BFF;
+  box-shadow: 0 0 12px rgba(59, 75, 255, 0.9), 0 0 24px rgba(59, 75, 255, 0.6);
+  transform: translateX(-50%);
+}

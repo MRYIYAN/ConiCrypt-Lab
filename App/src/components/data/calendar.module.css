@@ -1,0 +1,74 @@
+/* filepath: /home/ian00/ConiCrypt-Lab/App/src/components/data/calendar.module.css */
+/* Nota: Este archivo usa Tailwind @apply y requiere el plugin de PostCSS (tailwindcss).
+   Si VS Code muestra 'Unknown at rule @apply', configura css.lint.unknownAtRules en "ignore". */
+
+/* Root */
+.root { @apply p-3; }
+
+/* Layout */
+.months { @apply flex flex-col sm:flex-row gap-2; }
+.month { @apply flex flex-col gap-4; }
+
+/* Caption */
+.caption { @apply flex justify-center pt-1 relative items-center w-full; }
+.captionLabel { @apply text-sm font-medium; }
+.captionIcon { @apply size-4; }
+
+/* Navigation */
+.nav { @apply flex items-center gap-1; }
+.navButton { @apply size-7 bg-transparent p-0 opacity-50 hover:opacity-100; }
+.navButtonPrevious { @apply absolute left-1; }
+.navButtonNext { @apply absolute right-1; }
+
+/* Table */
+.table { @apply w-full border-collapse space-x-1; }
+
+/* Head */
+.headRow { @apply flex; }
+.headCell { @apply text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]; }
+
+/* Rows */
+.row { @apply flex w-full mt-2; }
+
+/* Cells */
+.cell { @apply relative p-0 text-center text-sm focus-within:relative focus-within:z-20; }
+
+/* Selección única: redondea toda la celda si contiene un día seleccionado */
+.cellSingle:has([aria-selected]) { @apply rounded-md; }
+
+/* Rango: redondea según inicio/fin dentro de la celda */
+.cellRange:has(> .dayRangeEnd) { @apply rounded-r-md; }
+.cellRange:has(> .dayRangeStart) { @apply rounded-l-md; }
+/* Primer/último en la fila cuando hay selección */
+.row > .cell:first-child:has([aria-selected]) { @apply rounded-l-md; }
+.row > .cell:last-child:has([aria-selected]) { @apply rounded-r-md; }
+/* Fondo cuando la celda contiene un día seleccionado (no interfiere con day_selected) */
+.cell:has([aria-selected]) { @apply bg-accent; }
+
+/* Days (se combinan con buttonVariants 'ghost') */
+.day { @apply size-8 p-0 font-normal; }
+.day[aria-selected="true"] { @apply opacity-100; }
+
+/* Day range edges */
+.dayRangeStart[aria-selected="true"] { @apply bg-primary text-primary-foreground; }
+
+.dayRangeEnd[aria-selected="true"] { @apply bg-primary text-primary-foreground; }
+
+/* Selected day (no rango) */
+.daySelected { @apply bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground; }
+
+/* Today */
+.dayToday { @apply bg-accent text-accent-foreground; }
+
+/* Outside */
+.dayOutside { @apply text-muted-foreground; }
+.dayOutside[aria-selected="true"] { @apply text-muted-foreground; }
+
+/* Disabled */
+.dayDisabled { @apply text-muted-foreground opacity-50; }
+
+/* Middle of range */
+.dayRangeMiddle[aria-selected="true"] { @apply bg-accent text-accent-foreground; }
+
+/* Hidden */
+.dayHidden { @apply invisible; }

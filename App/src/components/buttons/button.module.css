@@ -1,0 +1,45 @@
+/* Nota: Este archivo usa Tailwind @apply y requiere el plugin de PostCSS (tailwindcss).
+   Si VS Code muestra 'Unknown at rule @apply', usa la configuración de .vscode/settings.json que se indica. */
+
+/* Base */
+.base {
+  @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all outline-none shrink-0;
+}
+.base:disabled {
+  @apply pointer-events-none opacity-50;
+}
+.base > svg {
+  @apply pointer-events-none shrink-0;
+}
+.base > svg:not([class*="size-"]) {
+  @apply size-4;
+}
+.base:focus-visible {
+  @apply border-ring ring-ring/50 ring-[3px];
+}
+.base[aria-invalid="true"] {
+  @apply ring-destructive/20 border-destructive;
+}
+.dark .base[aria-invalid="true"] {
+  @apply ring-destructive/40;
+}
+
+/* Variants */
+.variantDefault { @apply bg-primary text-primary-foreground hover:bg-primary/90; }
+.variantDestructive { @apply bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60; }
+.variantOutline { @apply border bg-background text-foreground hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50; }
+.variantSecondary { @apply bg-secondary text-secondary-foreground hover:bg-secondary/80; }
+.variantGhost { @apply hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50; }
+.variantLink { @apply text-primary underline-offset-4 hover:underline; }
+
+/* Sizes */
+.sizeDefault { @apply h-9 px-4 py-2; }
+.sizeDefault:has(> svg) { @apply px-3; }
+
+.sizeSm { @apply h-8 rounded-md gap-1.5 px-3; }
+.sizeSm:has(> svg) { @apply px-2.5; }
+
+.sizeLg { @apply h-10 rounded-md px-6; }
+.sizeLg:has(> svg) { @apply px-4; }
+
+.sizeIcon { @apply size-9 rounded-md; }

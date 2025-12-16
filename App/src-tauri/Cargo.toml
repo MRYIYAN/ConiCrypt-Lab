@@ -24,5 +24,9 @@ futures-util = "0.3"
 tokio-tungstenite = "0.21"
 tungstenite = "0.21"
 # reqwest = { version = "0.12", features = ["json", "rustls-tls"] } # <- solo si llamas HTTP
-# urlencoding = "2"                                                 # <- útil para querystrings
+# urlencoding = "2"   
+
+[features]
+custom-protocol = ["tauri/custom-protocol"] # <- útil para querystrings
+
 
