@@ -12,9 +12,9 @@
 //---------------------------------------------------------------------------//YYSSS
 import { motion } from 'framer-motion';
 import { Home, Circle, Grid3x3, Clock, Settings } from 'lucide-react';
-import { useState } from 'react';
-// Import View type to type props
+import { useState, useEffect, useRef } from 'react';
 import type { View } from '../../App';
+import styles from './FloatingDock.module.css';
 
 //---------------------------------------------------------------------------//
 //                                TIPOS/ITEMS                                 //
@@ -45,43 +45,115 @@ export function FloatingDock({
 }) {
   // Estado UI: pestaña activa y elemento con hover
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  // Estado de snap del dock
+  type DockSnap = 'center' | 'left' | 'right';
+  const [snap, setSnap] = useState<DockSnap>('center');
+
+  // Posición animada explícita del wrapper (evitar variants para x/y)
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const dockRef = useRef<HTMLDivElement>(null);
+  const [dragConstraints, setDragConstraints] = useState({
+    top: 16,
+    left: 16,
+    right: 16,
+    bottom: 16,
+  });
+
+  useEffect(() => {
+    const updateConstraints = () => {
+      setDragConstraints({
+        top: 16,
+        bottom: Math.max(16, window.innerHeight - 80),
+        left: 16,
+        right: Math.max(16, window.innerWidth - 80),
+      });
+    };
+    updateConstraints();
+    window.addEventListener('resize', updateConstraints);
+    return () => window.removeEventListener('resize', updateConstraints);
+  }, []);
+
+  // Compute absolute target position per snap
+  const updatePositionForSnap = (next: DockSnap) => {
+    const rect = dockRef.current?.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const marginSide = 12;
+    const marginBottom = 24;
+    const w = rect?.width ?? 0;
+    const h = rect?.height ?? 0;
+
+    if (next === 'left') {
+      setPosition({ x: marginSide, y: Math.max(16, (vh - h) / 2) });
+    } else if (next === 'right') {
+      setPosition({ x: Math.max(16, vw - w - marginSide), y: Math.max(16, (vh - h) / 2) });
+    } else {
+      // center: bottom-24 and horizontally centered
+      setPosition({ x: Math.max(16, (vw - w) / 2), y: Math.max(16, vh - h - marginBottom) });
+    }
+  };
+
+  // Initialize centered position after mount
+  useEffect(() => {
+    updatePositionForSnap('center');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Snap thresholded by viewport edges
+  function handleSnap(point: { x: number; y: number }) {
+    const threshold = 80;
+    const width = window.innerWidth;
+
+    if (point.x < threshold) {
+      setSnap('left');
+      updatePositionForSnap('left');
+    } else if (point.x > width - threshold) {
+      setSnap('right');
+      updatePositionForSnap('right');
+    } else {
+      setSnap('center');
+      updatePositionForSnap('center');
+    }
+  }
 
   return (
     <motion.div
-      // Entrada con escala/opacidad para montar suavemente
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.2 }}
-      // Posicionamiento: fijo y centrado con translateX; offset fino con margin-left
-      className="fixed bottom-8 left-1/2 z-40"
-      style={{ 
-        transform: 'translateX(-50%)',
-        marginLeft: '-180px',
+      // Wrapper: fixed + animado por x/y; sin variants de posición absoluta
+      className={`fixed z-40 ${styles.dockWrapper} ${styles.root}`}
+      ref={dockRef}
+      drag
+      dragConstraints={dragConstraints}
+      dragMomentum={false}
+      dragElastic={0.15}
+      animate={position}
+      onDragEnd={(_, info) => handleSnap(info.point)}
+      layout
+      transition={{
+        layout: { type: 'spring', stiffness: 420, damping: 30 },
+        default: { type: 'spring', stiffness: 320, damping: 30 },
       }}
     >
       <motion.div
-        // Contenedor visual con gradiente, blur y sombras internas/externas
-        className="relative rounded-3xl shadow-2xl"
-        style={{
-          background: 'linear-gradient(135deg, rgba(18, 18, 35, 0.95), rgba(25, 25, 45, 0.95))',
-          backdropFilter: 'blur(40px) saturate(150%)',
-          border: '1px solid rgba(59, 75, 255, 0.25)',
-          padding: '12px 16px',
-          boxShadow: `
-            0 0 0 1px rgba(59, 75, 255, 0.15),
-            0 16px 48px rgba(0, 0, 0, 0.7),
-            0 0 80px rgba(59, 75, 255, 0.15),
-            inset 0 1px 0 rgba(255, 255, 255, 0.08),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.3)
-          `,
+        className={`relative rounded-3xl ${styles.dockContainer} ${
+          snap === 'center' ? styles.horizontal : styles.vertical
+        }`}
+        // Entrada con escala/opacidad para montar suavemente
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        // Spring de layout para cambios de orientación (horizontal/vertical)
+        transition={{
+          layout: { type: 'spring', stiffness: 500, damping: 35 },
+          type: 'spring',
+          stiffness: 300,
+          damping: 25,
+          delay: 0.2,
         }}
+        layout
       >
         {/* Overlay animado: gradiente radial decorativo */}
         <motion.div
-          className="absolute inset-0 rounded-3xl pointer-events-none opacity-40"
-          style={{
-            background: 'radial-gradient(circle at 50% 50%, rgba(59, 75, 255, 0.2), transparent 70%)',
-          }}
+          className={styles.overlay}
           animate={{
             background: [
               'radial-gradient(circle at 30% 50%, rgba(59, 75, 255, 0.2), transparent 70%)',
@@ -93,16 +165,14 @@ export function FloatingDock({
         />
 
         {/* Glow suave en los bordes */}
-        <div 
-          className="absolute -inset-0.5 rounded-3xl pointer-events-none opacity-50"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(59, 75, 255, 0.1), transparent)',
-            filter: 'blur(8px)',
-          }}
-        />
+        <div className={styles.edgeGlow} />
 
         {/* Lista de ítems del dock */}
-        <div className="relative flex items-center gap-2">
+        <div
+          className={`relative items-center ${
+            snap === 'center' ? styles.itemsHorizontal : styles.itemsVertical
+          }`}
+        >
           {dockItems.map((item) => {
             const isActive = activeView === (item.id as View);
             const isHovered = hoveredTab === item.id;
@@ -113,8 +183,10 @@ export function FloatingDock({
                   onClick={() => onChangeView(item.id as View)}
                   onMouseEnter={() => setHoveredTab(item.id)}
                   onMouseLeave={() => setHoveredTab(null)}
+                  className={`${styles.dockButton} ${
+                    isActive ? styles.dockButtonActive : isHovered ? styles.dockButtonHovered : ''
+                  }`}
                   // Botón: tamaño fijo, redondeado, transición; colores según estado
-                  className="relative p-3 rounded-2xl transition-all flex items-center justify-center"
                   style={{
                     width: '52px',
                     height: '52px',
@@ -144,6 +216,7 @@ export function FloatingDock({
                 >
                   {/* Ícono con glow dinámico según estado */}
                   <motion.div
+                    className={styles.icon}
                     animate={{
                       filter: isActive 
                         ? 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))' 
@@ -154,17 +227,12 @@ export function FloatingDock({
                   >
                     {item.icon}
                   </motion.div>
-                  
+
                   {/* Indicador activo */}
                   {isActive && (
                     <motion.div
                       layoutId="activeIndicator"
-                      className="absolute -bottom-1.5 left-1/2 w-1.5 h-1.5 rounded-full"
-                      style={{ 
-                        backgroundColor: '#3B4BFF',
-                        boxShadow: '0 0 12px rgba(59, 75, 255, 0.9), 0 0 24px rgba(59, 75, 255, 0.6)',
-                        transform: 'translateX(-50%)',
-                      }}
+                      className={`${styles.activeIndicator} ${snap !== 'center' ? styles.indicatorVertical : ''}`}
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                     />
                   )}
@@ -175,11 +243,7 @@ export function FloatingDock({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="absolute inset-0 rounded-2xl pointer-events-none"
-                      style={{
-                        border: '1px solid rgba(123, 44, 255, 0.3)',
-                        boxShadow: '0 0 16px rgba(123, 44, 255, 0.2)',
-                      }}
+                      className={styles.hoverGlow}
                     />
                   )}
                 </motion.button>
@@ -193,40 +257,23 @@ export function FloatingDock({
                     className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none"
                     transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                   >
-                    <div 
-                      className="px-4 py-2 rounded-xl"
-                      style={{ 
-                        color: '#E4E4EC',
-                        background: 'linear-gradient(135deg, rgba(18, 18, 35, 0.98), rgba(25, 25, 45, 0.98))',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(59, 75, 255, 0.3)',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        boxShadow: `
-                          0 4px 20px rgba(0, 0, 0, 0.6),
-                          0 0 30px rgba(59, 75, 255, 0.2),
-                          inset 0 1px 0 rgba(255, 255, 255, 0.1)
-                        `,
-                      }}
-                    >
-                      {item.label}
-                    </div>
+                    <div className={styles.tooltip}>{item.label}</div>
                     {/* Flecha del tooltip */}
-                    <div 
-                      className="absolute -bottom-1 left-1/2 w-2 h-2"
-                      style={{
-                        backgroundColor: 'rgba(18, 18, 35, 0.98)',
-                        border: '1px solid rgba(59, 75, 255, 0.3)',
-                        borderTop: 'none',
-                        borderLeft: 'none',
-                        transform: 'translateX(-50%) rotate(45deg)',
-                      }}
-                    />
+                    <div className={styles.tooltipArrow} />
                   </motion.div>
                 )}
               </div>
             );
           })}
+        </div>
+
+        {/* Halo/handle visual para feedback de arrastre */}
+        <div className={styles.dragHandle}>
+          <div className={styles.gripDots}>
+            <span className={styles.gripDot} />
+            <span className={styles.gripDot} />
+            <span className={styles.gripDot} />
+          </div>
         </div>
       </motion.div>
     </motion.div>

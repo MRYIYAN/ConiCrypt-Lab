@@ -1,0 +1,296 @@
+.root {
+  position: relative;
+  z-index: 20;
+}
+
+.panel {
+  background: rgba(10, 10, 15, 0.8);
+  border: 1px solid rgba(59, 75, 255, 0.2);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(59, 75, 255, 0.1);
+}
+
+.accentBar {
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(#3B4BFF, #7B2CFF);
+  border-radius: 999px;
+}
+
+.editorToolbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1rem;
+  height: 40px;
+  align-items: center;
+  background: rgba(18, 18, 31, 0.6);
+  border-bottom: 1px solid rgba(59, 75, 255, 0.1);
+}
+
+.copyBtn {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+  color: #3B4BFF;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background-color 200ms ease;
+}
+.copyBtn:hover {
+  background: rgba(59, 75, 255, 0.1);
+}
+
+.coeffLabel {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #3B4BFF;
+  font-family: monospace;
+}
+
+.coeffInput {
+  width: 100%;
+  padding: 10px 12px 10px 32px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(59, 75, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  text-align: right;
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+.coeffInput:hover {
+  border-color: rgba(59, 75, 255, 0.4);
+}
+.coeffInput:focus {
+  outline: none;
+  border-color: #3B4BFF;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.preview {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(59, 75, 255, 0.2);
+  padding: 12px;
+  font-family: monospace;
+  color: #4DFF8F;
+}
+
+.analyzeBtn {
+  flex: 1;
+  background: linear-gradient(to right, #3B4BFF, #7B2CFF);
+  padding: 12px;
+  border-radius: 8px;
+  color: white;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  transition: box-shadow 300ms ease;
+}
+.analyzeBtn:hover {
+  box-shadow: 0 0 30px rgba(59, 75, 255, 0.5);
+}
+.analyzeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.clearBtn {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(59, 75, 255, 0.2);
+  color: #999;
+  transition: background-color 300ms ease, border-color 300ms ease, color 300ms ease;
+}
+.clearBtn:hover {
+  background: rgba(59, 75, 255, 0.2);
+  border-color: rgba(59, 75, 255, 0.4);
+  color: white;
+}
+
+.visualHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.iconBtn {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(59, 75, 255, 0.2);
+  color: #999;
+  background: rgba(10, 10, 15, 0.6);
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+.iconBtn svg {
+  color: #6B7280; /* gris-500 */
+}
+.iconBtn:hover {
+  background: rgba(59, 75, 255, 0.2);
+  border-color: #3B4BFF;
+}
+.iconBtn:hover svg {
+  color: #3B4BFF;
+}
+
+.visualization {
+  background: black;
+  border: 1px solid rgba(59, 75, 255, 0.2);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(59, 75, 255, 0.05);
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-size: 60px 60px;
+  background-image:
+    linear-gradient(to right, #3B4BFF 1px, transparent 1px),
+    linear-gradient(to bottom, #3B4BFF 1px, transparent 1px);
+  opacity: 0.03;
+}
+
+.axisX,
+.axisY {
+  position: absolute;
+}
+
+.axisX {
+  top: 50%;
+  width: 100%;
+  height: 0.5px; /* antes 1px */
+  background-image: linear-gradient(to right, transparent, rgba(59, 75, 255, 0.2), transparent);
+}
+
+.axisY {
+  left: 50%;
+  height: 100%;
+  width: 0.5px; /* antes 1px */
+  background-image: linear-gradient(to bottom, transparent, rgba(59, 75, 255, 0.2), transparent);
+}
+
+.centered {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.ellipse {
+  fill: none;
+  stroke: #3B4BFF;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 10px rgba(59, 75, 255, 0.7));
+}
+
+.overlay {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+.accentBarSmall {
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(#4DFF8F, #3B4BFF);
+  border-radius: 999px;
+}
+
+.resultCard {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(59, 75, 255, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  transition: border-color 300ms ease;
+}
+.resultCard:hover {
+  border-color: rgba(59, 75, 255, 0.4);
+}
+
+.sparkleContainer {
+  margin-bottom: 24px; 
+  display: flex;
+  justify-content: center;
+  transform-origin: center;
+}
+
+.sparkleWaiting {
+  width: 5rem;  
+  height: 5rem;
+  color: #3B4BFF; 
+  transform: translateX(4px); 
+}
+
+.metadataEmpty {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.sparkleSmall {
+  width: 2.5rem;   
+  height: 2.5rem;  
+  color: rgba(59, 75, 255, 0.4); 
+  margin-bottom: 12px; 
+}
+
+.topGrid {
+  display: grid;
+  grid-template-columns: 40% 60%; 
+}
+
+@media (max-width: 1200px) {
+  .topGrid {
+    grid-template-columns: 40% 60%;
+  }
+}
+@media (max-width: 1024px) {
+  .topGrid {
+    grid-template-columns: 1fr; 
+    row-gap: 24px;
+  }
+}
+
+.loadingSpinnerWrap {
+  margin-bottom: 24px; /* igual que mb-6 */
+  display: inline-flex;
+  justify-content: center;
+  transform-origin: center;
+}
+
+.loadingSpinner {
+  width: 5rem;   /* w-20 */
+  height: 5rem;  /* h-20 */
+  position: relative;
+  transform: translateX(6px); /* ligero ajuste para centrar sobre la “o” */
+}
+.loadingSpinner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  /* Espiral mediante conic-gradient dentro de un anillo */
+  background: conic-gradient(
+    from 0deg,
+    rgba(59, 75, 255, 0) 0%,
+    rgba(59, 75, 255, 0) 25%,
+    rgba(59, 75, 255, 0.9) 55%,
+    rgba(123, 44, 255, 0.7) 75%,
+    rgba(59, 75, 255, 0) 100%
+  );
+  /* Máscara para crear un anillo y que parezca espiral */
+  -webkit-mask: radial-gradient(circle, transparent 52%, black 53%);
+  mask: radial-gradient(circle, transparent 52%, black 53%);
+  animation: spinner-rotate 1.8s linear infinite;
+  filter: drop-shadow(0 0 10px rgba(59, 75, 255, 0.6));
+}
+
+@keyframes spinner-rotate {
+  to { transform: rotate(360deg); }
+}

@@ -9,6 +9,7 @@
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { Wifi, CheckCircle2, Play } from 'lucide-react';
+import styles from './Dashboard.module.css';
 
 const asciiArt = 
 `██████╗ ██████╗ ███╗   ██╗██╗ ██████╗██████╗ ██╗   ██╗██████╗ ████████╗     ██╗      █████╗ ██████╗ 
@@ -99,18 +100,13 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   return (
     <div 
       ref={containerRef}
-      className="h-screen w-screen flex items-center justify-center overflow-hidden"
-      style={{
-        perspective: '1200px',
-        position: 'relative',
-        zIndex: 10,
-      }}
+      className={styles.container}
     >
       {/* Fondo animado (glow) no interactivo
          - pointer-events-none para no bloquear el HUD.
          - Se anima con gradientes radiales en bucle. */}
       <motion.div
-        className="absolute inset-0 pointer-events-none"
+        className={styles.background}
         animate={{
           background: [
             'radial-gradient(circle at 20% 50%, rgba(59, 75, 255, 0.15) 0%, transparent 50%)',
@@ -137,7 +133,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           stiffness: 50,
           damping: 20,
         }}
-        className="relative z-10 flex flex-col items-center justify-center min-h-screen px-8"
+        className={styles.scene}
       >
         {/* Logo with holographic effect */}
         <motion.div
@@ -148,22 +144,11 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             transform: 'translateZ(100px)',
             transformStyle: 'preserve-3d',
           }}
-          className="mb-12 text-center"
+          className={styles.logoWrap}
         >
           {/* ASCII Art with typing animation */}
-          <div className="flex items-center justify-center mb-6">
-            <pre
-              style={{
-                color: '#4DFF8F',
-                textShadow: '0 0 10px rgba(77, 255, 143, 0.6), 0 0 20px rgba(59, 75, 255, 0.4)',
-                fontSize: '11px',
-                lineHeight: '1.2',
-                fontFamily: 'monospace',
-                margin: 0,
-                whiteSpace: 'pre',
-                display: 'inline',
-              }}
-            >
+          <div className={styles.asciiRow}>
+            <pre className={styles.ascii}>
               {typedText}
             </pre>
             {!isTypingComplete && (
@@ -174,11 +159,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                     ? '0 0 15px rgba(77, 255, 143, 0.8)' 
                     : '0 0 0px rgba(77, 255, 143, 0)',
                 }}
-                className="inline-block w-1.5 h-3 ml-0.5 rounded-sm"
-                style={{ 
-                  backgroundColor: '#4DFF8F',
-                  verticalAlign: 'middle',
-                }}
+                className={styles.cursor}
               />
             )}
           </div>
@@ -195,13 +176,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               delay: 0.3,
               ease: [0.16, 1, 0.3, 1] // Ease out expo para más suavidad
             }}
-            className="mt-4"
-            style={{
-              fontSize: '1.2rem',
-              color: '#A4A4B8',
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-            }}
+            className={styles.subtitle}
           >
             {isTypingComplete && (
               <>
@@ -219,10 +194,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                       delay: index * 0.03,
                       ease: 'easeOut'
                     }}
-                    style={{
-                      display: 'inline-block',
-                      textShadow: '0 0 20px rgba(164, 164, 184, 0.4)',
-                    }}
+                    className={styles.subtitleChar}
                   >
                     {char === ' ' ? '\u00A0' : char}
                   </motion.span>
@@ -232,7 +204,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           </motion.p>
         </motion.div>
 
-        {/* Panel de estado (glassmorphism + profundidad) */}
+        {/* Panel de estado (NO tocar estilos ni estructura) */}
         <motion.div
           initial={{ opacity: 0, x: -300 }}
           animate={{ opacity: 1, x: 0 }}
@@ -288,7 +260,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
         </motion.div>
 
         {/* Botón CTA: navega a Curvas Cónicas
-           - onNavigate("conics") → App cambia la vista a ConicAnalysis.
+           - onNavigate("conics") -> App cambia la vista a ConicAnalysis.
            - Animaciones: spring + hover/tap para respuesta visual. */}
         <motion.button
           onClick={() => onNavigate("conics")}
@@ -306,19 +278,8 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             boxShadow: '0 0 40px rgba(59, 75, 255, 0.6)',
           }}
           whileTap={{ scale: 0.95 }}
-          style={{
-            transform: 'translateZ(60px)',
-            backgroundColor: '#3B4BFF',
-            color: '#E4E4EC',
-            padding: '16px 48px',
-            borderRadius: '12px',
-            fontSize: '1.1rem',
-            fontWeight: 600,
-            border: 'none',
-            cursor: 'pointer',
-            boxShadow: '0 0 30px rgba(59, 75, 255, 0.4)',
-          }}
-          className="flex items-center gap-3"
+          style={{ transform: 'translateZ(60px)' }}
+          className={styles.cta}
         >
           <Play size={20} fill="currentColor" />
           Iniciar Análisis

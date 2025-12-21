@@ -1,23 +1,16 @@
-@reference "tailwindcss";
-
-
-/* Nota: Este archivo usa Tailwind @apply y requiere el plugin de PostCSS (tailwindcss).
-   Si VS Code muestra 'Unknown at rule @apply', configura css.lint.unknownAtRules en "ignore". */
-
-/* Root: fijo y centrado en la parte inferior */
-.root {
-  @apply fixed bottom-8 left-1/2 z-40;
-  transform: translateX(-50%);
-  margin-left: -180px; /* offset fino para el ancho del dock */
+/* Ajustes de posicionamiento del wrapper: sin transformaciones; la posición la controla Motion con x/y */
+.dockWrapper {
+  cursor: grab;
+}
+.dockWrapper:active {
+  cursor: grabbing;
 }
 
-/* Dock: contenedor visual con gradiente, blur y sombras */
-.dock {
-  @apply relative rounded-3xl;
+/* Contenedor principal: degradado, desenfoque, bordes, padding, sombras */
+.dockContainer {
   background: linear-gradient(135deg, rgba(18, 18, 35, 0.95), rgba(25, 25, 45, 0.95));
   backdrop-filter: blur(40px) saturate(150%);
   border: 1px solid rgba(59, 75, 255, 0.25);
-  padding: 12px 16px;
   box-shadow:
     0 0 0 1px rgba(59, 75, 255, 0.15),
     0 16px 48px rgba(0, 0, 0, 0.7),
@@ -26,51 +19,178 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.3);
 }
 
-/* Overlay animada: gradiente radial suave */
+/* Base de la superposición animada */
 .overlay {
-  @apply absolute inset-0 rounded-3xl pointer-events-none opacity-40;
+  position: absolute;
+  inset: 0;
+  border-radius: 1.5rem;
+  pointer-events: none;
+  opacity: 0.4;
   background: radial-gradient(circle at 50% 50%, rgba(59, 75, 255, 0.2), transparent 70%);
 }
 
-/* Glow de bordes para refuerzo de volumen */
-.glow {
-  @apply absolute -inset-0.5 rounded-3xl pointer-events-none opacity-50;
+/* Brillo sutil en los bordes */
+.edgeGlow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 1.5rem;
+  pointer-events: none;
+  opacity: 0.5;
   background: linear-gradient(90deg, transparent, rgba(59, 75, 255, 0.1), transparent);
   filter: blur(8px);
 }
 
-/* Contenedor de ítems del dock */
-.container {
-  @apply relative flex items-center gap-2;
-}
-
-/* Ítem base: botón con tamaño fijo y transición */
-.item {
-  @apply relative p-3 rounded-2xl transition-all flex items-center justify-center;
+/* Base de los botones del dock y variantes de estado */
+.dockButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 52px;
   height: 52px;
+  padding: 12px;
+  border-radius: 1rem;
+  transition: all 200ms ease;
+  color: #6C6C8C;
+  background: transparent;
+  border: 1px solid transparent;
 }
 
-/* Estado activo: color, borde y glow interno */
-.itemActive {
+.dockButtonActive {
   color: #FFFFFF;
   background-color: rgba(59, 75, 255, 0.4);
   border: 1px solid rgba(59, 75, 255, 0.5);
   box-shadow: 0 0 20px rgba(59, 75, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Estado inactivo: color tenue y sin borde/glow */
-.itemInactive {
-  color: #6C6C8C;
-  background-color: transparent;
-  border: 1px solid transparent;
-  box-shadow: none;
+.dockButtonHovered {
+  color: #E4E4EC;
+  background-color: rgba(123, 44, 255, 0.2);
+  border-color: transparent;
 }
 
-/* Indicador activo: pequeño punto con glow en la base del botón */
+/* Transición base del ícono para que los brillos se sientan suaves */
+.icon {
+  transition: filter 200ms ease;
+}
+
+/* Indicador activo */
 .activeIndicator {
-  @apply absolute -bottom-1.5 left-1/2 w-1.5 h-1.5 rounded-full;
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
   background-color: #3B4BFF;
   box-shadow: 0 0 12px rgba(59, 75, 255, 0.9), 0 0 24px rgba(59, 75, 255, 0.6);
   transform: translateX(-50%);
+}
+
+/* Indicador en orientación vertical (lado derecho, centrado) */
+.indicatorVertical {
+  bottom: auto;
+  left: auto;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Superposición de brillo al pasar el mouse */
+.hoverGlow {
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  pointer-events: none;
+  border: 1px solid rgba(123, 44, 255, 0.3);
+  box-shadow: 0 0 16px rgba(123, 44, 255, 0.2);
+}
+
+/* Estilos de la herramienta de información (tooltip) */
+.tooltip {
+  color: #E4E4EC;
+  background: linear-gradient(135deg, rgba(18, 18, 35, 0.98), rgba(25, 25, 45, 0.98));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(59, 75, 255, 0.3);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.6),
+    0 0 30px rgba(59, 75, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: 0.75rem; /* rounded-xl */
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tooltipArrow {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background-color: rgba(18, 18, 35, 0.98);
+  border: 1px solid rgba(59, 75, 255, 0.3);
+  border-top: none;
+  border-left: none;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+/* Diseño de elementos */
+.items {
+  display: flex;
+  gap: 12px;
+}
+
+/* Orientación del contenedor de items */
+.itemsHorizontal {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  padding: 14px 18px; /* +2px de aire para grip */
+}
+
+.itemsVertical {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 14px; /* +2px de aire para grip */
+}
+
+/* Halo de arrastre (drag handle) */
+.dragHandle {
+  position: absolute;
+  inset: -8px; /* halo más amplio */
+  border-radius: inherit;
+  z-index: 1;
+  /* visual sutil */
+  box-shadow: inset 0 0 0 1px rgba(80, 120, 255, 0.15);
+  opacity: 0;
+  transition: opacity 0.25s ease, box-shadow 0.25s ease;
+  pointer-events: none; /* solo visual, no bloquea clics */
+}
+.dockWrapper:hover .dragHandle {
+  opacity: 1;
+}
+.dockWrapper:active .dragHandle {
+  box-shadow:
+    inset 0 0 0 1px rgba(120, 180, 255, 0.35),
+    0 0 18px rgba(80, 120, 255, 0.25);
+}
+
+/* Grip visual mínimo (opcional) */
+.gripDots {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 4px;
+  opacity: 0.25;
+  pointer-events: none;
+}
+.gripDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(140, 180, 255, 0.6);
 }
