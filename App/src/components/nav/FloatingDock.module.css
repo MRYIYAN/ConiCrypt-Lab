@@ -194,3 +194,9 @@
   border-radius: 50%;
   background: rgba(140, 180, 255, 0.6);
 }
+
+/* Asegura que el dock capture eventos de puntero/touch sin interferir con el comportamiento de arrastre */
+.root {
+  pointer-events: auto;
+  touch-action: none;
+}

@@ -12,7 +12,7 @@
 //---------------------------------------------------------------------------//YYSSS
 import { motion } from 'framer-motion';
 import { Home, Circle, Grid3x3, Clock, Settings } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { View } from '../../App';
 import styles from './FloatingDock.module.css';
 
@@ -28,7 +28,7 @@ interface DockItem {
 const dockItems: DockItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <Home size={22} /> },
   { id: 'conics', label: 'Curvas Cónicas', icon: <Circle size={22} /> },
-  { id: 'ecc', label: 'ECC Mode', icon: <Grid3x3 size={22} /> },
+  { id: 'biometric', label: 'Biometric Analysis', icon: <Grid3x3 size={22} /> },
   { id: 'history', label: 'Historial', icon: <Clock size={22} /> },
   { id: 'settings', label: 'Configuración', icon: <Settings size={22} /> },
 ];
@@ -54,28 +54,13 @@ export function FloatingDock({
 
   const dockRef = useRef<HTMLDivElement>(null);
   const [dragConstraints, setDragConstraints] = useState({
-    top: 16,
-    left: 16,
-    right: 16,
-    bottom: 16,
+    top: 12,
+    left: 12,
+    right: Math.max(12, window.innerWidth - 72),
+    bottom: Math.max(12, window.innerHeight - 72),
   });
 
-  useEffect(() => {
-    const updateConstraints = () => {
-      setDragConstraints({
-        top: 16,
-        bottom: Math.max(16, window.innerHeight - 80),
-        left: 16,
-        right: Math.max(16, window.innerWidth - 80),
-      });
-    };
-    updateConstraints();
-    window.addEventListener('resize', updateConstraints);
-    return () => window.removeEventListener('resize', updateConstraints);
-  }, []);
-
-  // Compute absolute target position per snap
-  const updatePositionForSnap = (next: DockSnap) => {
+  const updatePositionForSnap = useCallback((next: DockSnap) => {
     const rect = dockRef.current?.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -89,10 +74,9 @@ export function FloatingDock({
     } else if (next === 'right') {
       setPosition({ x: Math.max(16, vw - w - marginSide), y: Math.max(16, (vh - h) / 2) });
     } else {
-      // center: bottom-24 and horizontally centered
       setPosition({ x: Math.max(16, (vw - w) / 2), y: Math.max(16, vh - h - marginBottom) });
     }
-  };
+  }, []);
 
   // Initialize centered position after mount
   useEffect(() => {
@@ -116,6 +100,30 @@ export function FloatingDock({
       updatePositionForSnap('center');
     }
   }
+
+  useEffect(() => {
+    const handleResize = () => {
+      setDragConstraints({
+        top: 12,
+        left: 12,
+        right: Math.max(12, window.innerWidth - 72),
+        bottom: Math.max(12, window.innerHeight - 72),
+      });
+
+      if (window.innerWidth < 768) {
+        if (snap !== 'center') {
+          setSnap('center');
+        }
+        updatePositionForSnap('center');
+      } else {
+        updatePositionForSnap(snap);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, [snap, updatePositionForSnap]);
 
   return (
     <motion.div

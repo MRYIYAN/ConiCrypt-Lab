@@ -14,13 +14,14 @@ import { FloatingDock } from "./components/nav/FloatingDock";
 import { Terminal } from "./components/overlay/Terminal";
 import { Dashboard } from "./modules/dashboard/Dashboard";
 import { ConicAnalysis } from "./modules/conic-analysis/ConicAnalysis";
+import { VideoTerminalPanel } from "./modules/video-terminal/VideoTerminalPanel";
 import { WireframeGeometryBackground } from "./components/visual/WireframeGeometryBackground";
 import { CustomCursor } from "./components/visual/CustomCursor";
 
 export type View =
   | "dashboard"
   | "conics"
-  | "ecc"
+  | "biometric"
   | "history"
   | "settings";
 
@@ -54,6 +55,8 @@ export default function App() {
         )}
 
         {view === "conics" && <ConicAnalysis />}
+
+        {view === "biometric" && <VideoTerminalPanel />}
       </div>
 
       {/* DOCK FLOTANTE (controlado por props: activeView / onChangeView)

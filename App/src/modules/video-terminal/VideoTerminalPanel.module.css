@@ -1,0 +1,46 @@
+.glowBorder {
+	position: absolute;
+	inset: 0;
+	border-radius: 1.25rem;
+	pointer-events: none;
+
+	padding: 2px;
+
+	/* serpiente alrededor del borde */
+	background:
+		conic-gradient(
+			transparent 0deg,
+			rgba(99,102,241,0.0) 20deg,
+			rgba(99,102,241,0.9) 45deg,
+			rgba(139,92,246,1) 60deg,
+			rgba(99,102,241,0.9) 75deg,
+			rgba(99,102,241,0.0) 100deg,
+			transparent 360deg
+		);
+
+	/* recorte del centro */
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+
+	filter: blur(6px);
+	opacity: 0.8;
+
+	/*  ESTO es lo importante */
+	background-size: 200% 200%;
+	animation: glow-move 6s linear infinite;
+}
+
+@keyframes glow-move {
+	from {
+		background-position: 0% 50%;
+	}
+	to {
+		background-position: 200% 50%;
+	}
+}
