@@ -49,7 +49,7 @@ pub async fn start_ws_server(config: Config) {
                 }
             };
 
-            println!("[WS] Nueva conexión establecida ✅");
+            println!("[WS] Nueva conexión establecida ");
             let (mut write, mut read) = ws_stream.split();
 
             // Enviar mensaje inicial

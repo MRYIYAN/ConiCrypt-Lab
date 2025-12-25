@@ -1,9 +1,33 @@
+import { ENV } from '../../env';
 import { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { Activity, RefreshCw, ZoomIn, ZoomOut, Maximize2, Sparkles, Trash2, Copy } from 'lucide-react';
-import { Header } from './../Header/Header';
 import styles from './ConicAnalysis.module.css';
 import { TypingText } from '../../components/ui/TypingText';
+import { Canvas } from '@react-three/fiber';
+import { Line, OrthographicCamera } from '@react-three/drei';
+import { Header } from '../Header/Header';
+import { MetaCard } from '../../components/ui/MetaCard';
+import { InterpretationGrid } from '../../components/ui/InterpretationGrid';
+
+function generateEquation(coeffs: {
+  A: number;
+  B: number;
+  C: number;
+  D: number;
+  E: number;
+  F: number;
+}) {
+  const { A, B, C, D, E, F } = coeffs;
+  const terms: string[] = [];
+  if (A !== 0) terms.push(`${A}x²`);
+  if (B !== 0) terms.push(`${B}xy`);
+  if (C !== 0) terms.push(`${C}y²`);
+  if (D !== 0) terms.push(`${D}x`);
+  if (E !== 0) terms.push(`${E}y`);
+  if (F !== 0) terms.push(`${F}`);
+  return terms.length ? `${terms.join(" + ")} = 0` : "0 = 0";
+}
 
 interface ConicCoefficients {
   A: string;
@@ -14,12 +38,15 @@ interface ConicCoefficients {
   F: string;
 }
 
-interface AnalysisResult {
+type ConicResult = {
+  ok: boolean;
   type: string;
   delta: number;
-  center?: [number, number];
-  message?: string;
-}
+  center?: { exists: boolean; x: number; y: number };
+  rotation?: { has_rotation: boolean; theta: number };
+  canonical?: { exists: boolean; a: number; b: number };
+  points: { x: number; y: number }[];
+};
 
 export function ConicAnalysis() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -77,21 +104,15 @@ export function ConicAnalysis() {
     F: '1'
   });
 
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<ConicResult | null>(null);
 
   const handleInputChange = (field: keyof ConicCoefficients, value: string) => {
     setCoefficients(prev => ({ ...prev, [field]: value }));
   };
 
   const handleAnalyze = async () => {
-    setIsAnalyzing(true);
-    setResult(null);
-
-    // Simulación de análisis
-    await new Promise(resolve => setTimeout(resolve, 1800));
-
-    // Convertir a número solo cuando se necesita
+    // Convertir a números y ejecutar análisis real vía backend
     const numeric = {
       A: parseFloat(coefficients.A) || 0,
       B: parseFloat(coefficients.B) || 0,
@@ -101,56 +122,204 @@ export function ConicAnalysis() {
       F: parseFloat(coefficients.F) || 0,
     };
 
-    // Cálculo del discriminante
-    const delta = numeric.B ** 2 - 4 * numeric.A * numeric.C;
-
-    let type = 'Degenerada';
-    if (delta < 0) type = 'Elipse';
-    else if (delta === 0) type = 'Parábola';
-    else if (delta > 0) type = 'Hipérbola';
-
-    setResult({
-      type,
-      delta,
-      center: [0, 0],
-      message: 'Análisis completado'
-    });
-
-    setIsAnalyzing(false);
+    await runConicAnalysis(numeric);
   };
 
-  const handleClear = () => {
-    setCoefficients({ A: '0', B: '0', C: '0', D: '0', E: '0', F: '0' });
+  function handleClear() {
     setResult(null);
-  };
+    setCoefficients({
+      A: '0',
+      B: '0',
+      C: '0',
+      D: '0',
+      E: '0',
+      F: '0',
+    });
+  }
 
-  // Generar la ecuación formateada
-  const generateEquation = () => {
-    const A = parseFloat(coefficients.A) || 0;
-    const B = parseFloat(coefficients.B) || 0;
-    const C = parseFloat(coefficients.C) || 0;
-    const D = parseFloat(coefficients.D) || 0;
-    const E = parseFloat(coefficients.E) || 0;
-    const F = parseFloat(coefficients.F) || 0;
+  // Ejecución real: POST al backend y setea el resultado completo
+  async function runConicAnalysis(coeffs: {
+    A: number; B: number; C: number; D: number; E: number; F: number
+  }) {
+    try {
+      setLoading(true);
+      setResult(null);
 
-    let equation = '';
+      const isTauri = typeof window !== 'undefined' && '__TAURI__' in (window as any);
+      if (isTauri) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/tauri');
+          const json = await invoke<any>('analyze_conic', { coeffs });
+          const mapped: ConicResult = {
+            ok: json.ok,
+            type: json.type,
+            delta: json.delta,
+            center: json.center,
+            rotation: json.rotation,
+            canonical: json.canonical,
+            points: json.points || [],
+          };
+          setResult(mapped);
+          return;
+        } catch (tauriErr) {
+          console.warn('Tauri ha fallado', tauriErr);
+        }
+      }
+        const BASE_URL = ENV.PLOTTER_URL;
+        console.log('ENV CHECK:', import.meta.env);
+        console.log('USING PLOTTER_URL:', BASE_URL);
+        if (!BASE_URL) {
+          throw new Error('PLOTTER_URL no definido');
+        }
+        const res = await fetch(`${BASE_URL}/conic`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(coeffs),
+        });
 
-    if (A !== 0) equation += `${A > 0 && equation ? '+ ' : ''}${A === 1 ? '' : A === -1 ? '-' : A}x²`;
-    if (B !== 0) equation += ` ${B > 0 ? '+ ' : ''}${B === 1 ? '' : B === -1 ? '-' : B}xy`;
-    if (C !== 0) equation += ` ${C > 0 ? '+ ' : ''}${C === 1 ? '' : C === -1 ? '-' : C}y²`;
-    if (D !== 0) equation += ` ${D > 0 ? '+ ' : ''}${D}x`;
-    if (E !== 0) equation += ` ${E > 0 ? '+ ' : ''}${E}y`;
-    if (F !== 0) equation += ` ${F > 0 ? '+ ' : ''}${F}`;
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || 'Error backend');
+        }
 
-    return equation.trim() || '0' + ' = 0';
-  };
+        const json = await res.json();
+
+        console.group(" CONIC ANALYSIS RESULT");
+        console.log("Tipo:", json.type);
+        console.log("Delta (Δ):", json.delta);
+
+        if (json.center?.exists) {
+          console.log("Centro:", `(${json.center.x}, ${json.center.y})`);
+        } else {
+          console.log("Centro: No existe");
+        }
+
+        if (json.canonical?.exists) {
+          console.log("Forma canónica:", `a=${json.canonical.a}, b=${json.canonical.b}`);
+        } else {
+          console.log("Forma canónica: No disponible");
+        }
+
+        if (json.rotation?.has_rotation) {
+          console.log("Rotación θ:", json.rotation.theta);
+        } else {
+          console.log("Rotación: No");
+        }
+
+        console.log("Número de puntos:", json.points?.length ?? 0);
+        console.groupEnd();
+      const mapped: ConicResult = {
+        ok: json.ok,
+        type: json.type,
+        delta: json.delta,
+        center: json.center,
+        rotation: json.rotation,
+        canonical: json.canonical,
+        points: json.points || [],
+      };
+      setResult(mapped);
+    } catch (e) {
+      console.error('conic analysis ha fallado', e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Genera puntos analíticos para círculo y elipse (canónica)
+  function generateCanonicalPoints(
+    type: string,
+    center: { x: number; y: number },
+    canonical: { a: number; b: number },
+    steps = 256
+  ): [number, number, number][] {
+    const pts: [number, number, number][] = [];
+
+    if (type === 'CIRCLE') {
+      for (let i = 0; i <= steps; i++) {
+        const t = (i / steps) * Math.PI * 2;
+        const x = center.x + canonical.a * Math.cos(t);
+        const y = center.y + canonical.a * Math.sin(t);
+        pts.push([x, y, 0]);
+      }
+    }
+
+    if (type === 'ELLIPSE') {
+      for (let i = 0; i <= steps; i++) {
+        const t = (i / steps) * Math.PI * 2;
+        const x = center.x + canonical.a * Math.cos(t);
+        const y = center.y + canonical.b * Math.sin(t);
+        pts.push([x, y, 0]);
+      }
+    }
+
+    return pts;
+  }
+
+  // Genera ramas analíticas para hipérbola canónica
+  function generateHyperbolaPoints(
+    center: { x: number; y: number },
+    canonical: { a: number; b: number },
+    range = 5,
+    steps = 200
+  ) {
+    const left: [number, number, number][] = [];
+    const right: [number, number, number][] = [];
+
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * range + 1e-3;
+
+      const x = canonical.a * Math.cosh(t);
+      const y = canonical.b * Math.sinh(t);
+
+      right.push([center.x + x, center.y + y, 0]);
+      left.push([center.x - x, center.y + y, 0]);
+    }
+
+    return { left, right };
+  }
+
+  // Separa ramas de hipérbola por pares (y1/y2) para evitar cruces y glitches
+  function splitHyperbola(points: {x:number, y:number}[]) {
+    const branch1: [number, number, number][] = [];
+    const branch2: [number, number, number][] = [];
+
+    for (let i = 0; i < points.length; i += 2) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      if (!p2) continue;
+      branch1.push([p1.x, p1.y, 0]);
+      branch2.push([p2.x, p2.y, 0]);
+    }
+
+    return { branch1, branch2 };
+  }
+
+  // Helper: solo renderiza Line si hay al menos 2 puntos
+  function safeLine(
+    points: [number, number, number][],
+    color = "#00ff88"
+  ) {
+    if (!points || points.length < 2) return null;
+    return <Line points={points} color={color} lineWidth={2} />;
+  }
+
+  // Calcula el centro visual para la cámara
+  const visualCenter = result?.center?.exists
+    ? [result.center.x, result.center.y, 100]
+    : [0, 0, 100];
 
   return (
-    <div className={`${styles.root} w-full h-full flex flex-col`}>
-      <Header moduleName="conic-analysis" />
-      <div ref={containerRef} className={`${styles.perspective} flex-1 relative`}>
-        <div className="h-full p-6 overflow-hidden relative z-10">
-          {/* Global wrapper applying subtle rotateX (congelado hasta parallaxReady) */}
+    <div className="w-full h-full">
+      <div
+        ref={containerRef}
+        className="relative w-full h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-[#3B4BFF]/60 scrollbar-track-[#181830]/60"
+        style={{ maxHeight: '100vh' }}
+      >
+        {/* HEADER GLOBAL */}
+        <Header moduleName="Conic Analysis" />
+        {}
+        <div className="h-full p-6 overflow-visible relative">
+          {/* Global wrapper (congelado hasta parallaxReady) */}
           <motion.div
             className="h-full grid grid-rows-[1fr_auto] gap-6"
             style={{
@@ -162,7 +331,7 @@ export function ConicAnalysis() {
             transition={{ type: 'spring', stiffness: 18, damping: 40, delay: parallaxReady ? 0 : 0.15 }}
           >
             {/* FILA SUPERIOR - EDITOR Y VISUALIZACIÓN */}
-            <div className={`${styles.topGrid} gap-6 overflow-hidden`}>
+            <div className={`${styles.topGrid} gap-6`}>
               {/* PANEL IZQUIERDO - EDITOR DE FÓRMULAS */}
               <motion.div
                 initial={{ x: -50, opacity: 0 }}
@@ -196,9 +365,9 @@ export function ConicAnalysis() {
                 >
                   {/* Contenido interno (x/y congelados hasta parallaxReady) */}
                   <motion.div
-                    style={{ x: parallaxReady ? innerX : 0, y: parallaxReady ? innerY : 0 }}
+                    style={{ x: parallaxReady ? innerX : 0, y: parallaxReady ? innerY : 0, pointerEvents: 'auto' }}
                     transition={{ type: 'spring', stiffness: 30, damping: 40 }}
-                    className="flex flex-col h-full"
+                    className="flex flex-col h-full pointer-events-auto"
                   >
                     {/* Toolbar del editor */}
                     <div className={styles.editorToolbar}>
@@ -246,7 +415,14 @@ export function ConicAnalysis() {
                             </div>
                             <div className="flex-1 text-sm font-mono text-white pt-0.5">
                               <div className="h-6 leading-6 text-[#4DFF8F]">
-                                {generateEquation()}
+                                {generateEquation({
+                                  A: parseFloat(coefficients.A) || 0,
+                                  B: parseFloat(coefficients.B) || 0,
+                                  C: parseFloat(coefficients.C) || 0,
+                                  D: parseFloat(coefficients.D) || 0,
+                                  E: parseFloat(coefficients.E) || 0,
+                                  F: parseFloat(coefficients.F) || 0,
+                                })}
                               </div>
                             </div>
                           </div>
@@ -258,11 +434,11 @@ export function ConicAnalysis() {
                     <div className="mt-auto p-5 pt-0 flex gap-2.5">
                       <button
                         onClick={handleAnalyze}
-                        disabled={isAnalyzing}
+                        disabled={loading}
                         className={`${styles.analyzeBtn} font-medium tracking-wide text-sm relative overflow-hidden`}
                       >
                         <span className="relative z-10 flex items-center justify-center gap-2">
-                          {isAnalyzing ? (
+                          {loading ? (
                             <>
                               <RefreshCw className="w-4 h-4 animate-spin" />
                               Analizando...
@@ -282,6 +458,11 @@ export function ConicAnalysis() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
+
+                  {/* Interpretación de coeficientes fuera del motion.div para hover correcto */}
+                  <div className="px-6 pb-6 flex-1 relative" style={{ transformStyle: 'flat' }}>
+                    <InterpretationGrid />
+                  </div>
                   </motion.div>
                 </motion.div>
               </motion.div>
@@ -348,7 +529,7 @@ export function ConicAnalysis() {
                     </div>
 
                     {/* Estado inicial - Esperando (no rotate) */}
-                    {!result && !isAnalyzing && (
+                    {!result && !loading && (
                       <div className={styles.centered}>
                         <div className="text-center">
                           <div className={styles.sparkleContainer}>
@@ -363,7 +544,7 @@ export function ConicAnalysis() {
                     )}
 
                     {/* Loading state */}
-                    {isAnalyzing && (
+                    {loading && (
                       <div className={`${styles.centered} ${styles.overlay}`}>
                         <div className="text-center">
                           {/* Espiral de carga centrada */}
@@ -377,167 +558,197 @@ export function ConicAnalysis() {
                     )}
 
                     {/* Resultado - Gráfico de la cónica (no scale) */}
-                    {result && !isAnalyzing && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 1, ease: 'easeOut' }}
-                        className="relative"
-                      >
-                        {/* Elipse placeholder */}
-                        <motion.div
-                          initial={{ pathLength: 0 }}
-                          animate={{ pathLength: 1 }}
-                          transition={{ duration: 1.5, ease: "easeInOut" }}
-                        >
-                          <svg width="450" height="450" viewBox="0 0 450 450" className="overflow-visible">
-                            <defs>
-                              <linearGradient id="conicGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#3B4BFF" stopOpacity="0.8" />
-                                <stop offset="50%" stopColor="#7B2CFF" stopOpacity="0.6" />
-                                <stop offset="100%" stopColor="#3B4BFF" stopOpacity="0.8" />
-                              </linearGradient>
-                              <filter id="glow">
-                                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                                <feMerge>
-                                  <feMergeNode in="coloredBlur"/>
-                                  <feMergeNode in="SourceGraphic"/>
-                                </feMerge>
-                              </filter>
-                            </defs>
-                            <ellipse 
-                              cx="225" 
-                              cy="225" 
-                              rx="160" 
-                              ry="110" 
-                              fill="none" 
-                              stroke="url(#conicGradient)" 
-                              strokeWidth="3"
-                              filter="url(#glow)"
-                              className={`${styles.ellipse} animate-pulse`}
-                              style={{ animationDuration: '3s' }}
+                    {result && !loading && (
+                      <>
+                        {result.type === 'DEGENERATE' ? (
+                          <div className={styles.centered}>
+                            <div className="text-center">
+                              <div className={styles.sparkleContainer}>
+                                <Sparkles className={styles.sparkleWaiting} strokeWidth={1.5} />
+                              </div>
+                              <h4 className="text-xl text-yellow-400 mb-2 tracking-tight">Cónica degenerada</h4>
+                              <p className="text-sm text-gray-400">Par de rectas o caso límite.<br />No es una cónica genuina.</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <Canvas orthographic>
+                            <OrthographicCamera
+                              makeDefault
+                              position={visualCenter as [number, number, number]}
+                              zoom={20}
                             />
-                            {/* Centro */}
-                            <circle cx="225" cy="225" r="4" fill="#4DFF8F" />
-                            <circle cx="225" cy="225" r="8" fill="#4DFF8F" opacity="0.3" />
-                          </svg>
-                        </motion.div>
-                      </motion.div>
+
+                            {/* Círculo / Elipse canónica */}
+                            {result.canonical?.exists && result.center?.exists &&
+                              result.type !== 'HYPERBOLA' &&
+                              safeLine(
+                                generateCanonicalPoints(
+                                  result.type,
+                                  { x: result.center.x, y: result.center.y },
+                                  result.canonical
+                                )
+                              )
+                            }
+
+                            {/* Hipérbola canónica */}
+                            {result.type === 'HYPERBOLA' &&
+                              result.canonical?.exists &&
+                              result.center?.exists && (() => {
+                                const { left, right } = generateHyperbolaPoints(
+                                  result.center,
+                                  result.canonical
+                                );
+                                return (
+                                  <>
+                                    <Line points={left} color="#00ff88" lineWidth={2} />
+                                    <Line points={right} color="#00ff88" lineWidth={2} />
+                                  </>
+                                );
+                              })()
+                            }
+
+                            {/* Hipérbola fallback (si no hay canónica) */}
+                            {result.type === 'HYPERBOLA' &&
+                              (!result.canonical?.exists || !result.center?.exists) &&
+                              result.points?.length > 1 && (() => {
+                                const { branch1, branch2 } = splitHyperbola(result.points);
+                                return (
+                                  <>
+                                    {safeLine(branch1)}
+                                    {safeLine(branch2)}
+                                  </>
+                                );
+                              })()
+                            }
+
+                            {/* Fallback general */}
+                            {!result.canonical?.exists && result.points?.length > 1 &&
+                              safeLine(result.points.map(p => [p.x, p.y, 0]))
+                            }
+                          </Canvas>
+                        )}
+                      </>
                     )}
                   </motion.div>
                 </motion.div>
               </motion.div>
             </div>
-
-            {/* FILA INFERIOR - METADATOS Y RESULTADOS */}
             <motion.div
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 18, damping: 42 }}
               style={{ x: parallaxReady ? panelX : 0, y: parallaxReady ? panelY : 0 }}
               className={`${styles.panel} ${styles.curvedPanel} h-50 rounded-xl overflow-hidden`}
             >
-              <motion.div
-                style={{ x: parallaxReady ? innerX : 0, y: parallaxReady ? innerY : 0 }}
-                transition={{ type: 'spring', stiffness: 28, damping: 40 }}
-                className="h-full"
-              >
-                {/* Header del panel */}
-                <div className="h-10 px-5 flex items-center justify-between bg-[#12121F]/60 border-b border-[#3B4BFF]/10">
-                  <div className="flex items-center gap-3">
-                    <div className={styles.accentBarSmall} />
-                    <span className="text-sm text-white font-mono tracking-tight">Metadatos y Resultados</span>
-                  </div>
-                  <div className="text-xs text-gray-500 font-mono">
-                    {result ? 'Análisis completado' : 'Esperando análisis...'}
+              {loading ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className={styles.loadingSpinnerWrap}>
+                      <div className={styles.loadingSpinner} />
+                    </div>
+                    <h4 className="text-xl text-white mb-2 tracking-tight">Procesando...</h4>
                   </div>
                 </div>
-
-                {/* Contenido del panel */}
-                <div className="p-5">
-                  {result ? (
-                    <div className="grid grid-cols-5 gap-4 h-full">
-                      <div className={`${styles.resultCard} ${styles.curvedPanel}`}>
-                        {/* Tipo de Cónica */}
-                        <div className="bg-[#000000]/40 border border-[#3B4BFF]/20 rounded-lg p-4 
-                          hover:border-[#3B4BFF]/40 transition-all duration-300">
-                          <div className="text-xs text-gray-500 font-mono mb-2 uppercase tracking-wider">Tipo</div>
-                          <div className="text-xl text-[#4DFF8F] font-mono mb-1">
-                            {result.type}
-                          </div>
-                          <div className="text-xs text-gray-600 font-mono">Cónica detectada</div>
-                        </div>
-                      </div>
-
-                      <div className={`${styles.resultCard} ${styles.curvedPanel}`}>
-                        {/* Discriminante */}
-                        <div className="bg-[#000000]/40 border border-[#3B4BFF]/20 rounded-lg p-4
-                          hover:border-[#3B4BFF]/40 transition-all duration-300">
-                          <div className="text-xs text-gray-500 font-mono mb-2 uppercase tracking-wider">Discriminante</div>
-                          <div className="text-xl text-white font-mono mb-1">
-                            Δ = {result.delta.toFixed(2)}
-                          </div>
-                          <div className="text-xs text-gray-600 font-mono">
-                            {result.delta < 0 ? 'Δ < 0' : result.delta === 0 ? 'Δ = 0' : 'Δ > 0'}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={`${styles.resultCard} ${styles.curvedPanel}`}>
-                        {/* Centro */}
-                        <div className="bg-[#000000]/40 border border-[#3B4BFF]/20 rounded-lg p-4
-                          hover:border-[#3B4BFF]/40 transition-all duration-300">
-                          <div className="text-xs text-gray-500 font-mono mb-2 uppercase tracking-wider">Centro</div>
-                          <div className="text-xl text-white font-mono mb-1">
-                            ({result.center?.[0] ?? 0}, {result.center?.[1] ?? 0})
-                          </div>
-                          <div className="text-xs text-gray-600 font-mono">Coordenadas</div>
-                        </div>
-                      </div>
-
-                      <div className={`${styles.resultCard} ${styles.curvedPanel}`}>
-                        {/* Excentricidad */}
-                        <div className="bg-[#000000]/40 border border-[#3B4BFF]/20 rounded-lg p-4
-                          hover:border-[#3B4BFF]/40 transition-all duration-300">
-                          <div className="text-xs text-gray-500 font-mono mb-2 uppercase tracking-wider">Excentricidad</div>
-                          <div className="text-xl text-white font-mono mb-1">
-                            e = 0.75
-                          </div>
-                          <div className="text-xs text-gray-600 font-mono">Deformación</div>
-                        </div>
-                      </div>
-
-                      <div className={`${styles.resultCard} ${styles.curvedPanel}`}>
-                        {/* Estado del análisis */}
-                        <div className="bg-[#000000]/40 border border-[#3B4BFF]/20 rounded-lg p-4
-                          hover:border-[#3B4BFF]/40 transition-all duration-300">
-                          <div className="text-xs text-gray-500 font-mono mb-2 uppercase tracking-wider">Estado</div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-3 h-3 rounded-full bg-[#4DFF8F] animate-pulse" />
-                            <span className="text-sm text-[#4DFF8F] font-mono">Completo</span>
-                          </div>
-                          <div className="text-xs text-gray-600 font-mono">Tiempo: 1.8s</div>
-                        </div>
-                      </div>
+              ) : (
+                <motion.div
+                  style={{ x: parallaxReady ? innerX : 0, y: parallaxReady ? innerY : 0 }}
+                  transition={{ type: 'spring', stiffness: 28, damping: 40 }}
+                  className="h-full"
+                >
+                  {/* Header del panel */}
+                  <div className="h-10 px-5 flex items-center justify-between bg-[#12121F]/60 border-b border-[#3B4BFF]/10">
+                    <div className="flex items-center gap-3">
+                      <div className={styles.accentBarSmall} />
+                      <span className="text-sm text-white font-mono tracking-tight">Metadatos y Resultados</span>
                     </div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center">
-                      <div className={styles.metadataEmpty}>
-                        <Sparkles className={styles.sparkleSmall} strokeWidth={1.5} />
-                        <p className="text-sm text-gray-500 font-mono">
-                          Los metadatos aparecerán después del análisis
-                        </p>
-                      </div>
+                    <div className="text-xs text-gray-500 font-mono">
+                      {result ? 'Análisis completado' : 'Esperando análisis...'}
                     </div>
-                  )}
-                </div>
-              </motion.div>
+                  </div>
+
+                  {/* Contenido del panel */}
+                  <div className="p-5">
+                    {result ? (
+                      <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                          hidden: {},
+                          visible: {
+                            transition: {
+                              staggerChildren: 0.08,
+                              delayChildren: 0.1,
+                            },
+                          },
+                        }}
+                        className="grid grid-cols-5 gap-4 h-full"
+                      >
+                        <MetaCard
+                          label="Tipo"
+                          value={result.type.toUpperCase()}
+                          hint="Cónica detectada"
+                          accent="green"
+                        />
+                        <MetaCard
+                          label="Discriminante"
+                          value={`Δ = ${result.delta.toFixed(2)}`}
+                          hint={
+                            result.delta < 0
+                              ? 'Δ < 0'
+                              : result.delta === 0
+                              ? 'Δ = 0'
+                              : 'Δ > 0'
+                          }
+                        />
+                        <MetaCard
+                          label="Centro"
+                          value={
+                            result.center?.exists
+                              ? `(${result.center.x.toFixed(2)}, ${result.center.y.toFixed(2)})`
+                              : 'No existe'
+                          }
+                          hint="Coordenadas"
+                        />
+                        <MetaCard
+                          label="Forma canónica"
+                          value={
+                            result.canonical?.exists
+                              ? `a=${result.canonical.a.toFixed(2)}, b=${result.canonical.b.toFixed(2)}`
+                              : '—'
+                          }
+                          hint="Parámetros"
+                          accent="purple"
+                        />
+                        <MetaCard
+                          label="Estado"
+                          value={
+                            <span className="flex items-center gap-2">
+                              <span className="w-3 h-3 rounded-full bg-[#4DFF8F] animate-pulse" />
+                              Completo
+                            </span>
+                          }
+                          hint="Backend OK"
+                          accent="green"
+                        />
+                      </motion.div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="flex justify-center mb-3">
+                            <Sparkles className="w-10 h-10 text-[#3B4BFF]/40 animate-spin-slow" />
+                          </div>
+                          <p className="text-sm text-gray-500 font-mono">Los metadatos aparecerán después del análisis</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           </motion.div>
         </div>
 
-        {/* HUD background layer: no rotate, no motion */}
-        <div className={styles.hudLayer} />
+        {/* HUD background layer */}
+        <div className={`${styles.hudLayer} pointer-events-none`} />
       </div>
     </div>
   );

@@ -1,26 +1,43 @@
 FROM ubuntu:22.04
 WORKDIR /app
 
-# Instalación de dependencias
+# ====== CAPA 1 (MUY ESTABLE) ======
 RUN apt-get update && apt-get install -y \
-    build-essential python3 python3-pip nodejs npm curl git libgtk-3-dev libayatana-appindicator3-dev libssl-dev && \
-    curl https://sh.rustup.rs -sSf | sh -s -- -y && \
-    . "$HOME/.cargo/env"
+    build-essential \
+    python3 \
+    python3-pip \
+    nodejs \
+    npm \
+    curl \
+    git \
+    pkg-config \
+    libgtk-3-dev \
+    libayatana-appindicator3-dev \
+    libssl-dev \
+    libwebkit2gtk-4.0-dev \
+    libjavascriptcoregtk-4.0-dev \
+ && rm -rf /var/lib/apt/lists/*
 
-# Copiar todo el proyecto
-COPY . /app
+# Rust (estable)
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Instalar Python
+# ====== CAPA 2 (LOCKFILES) ======
+COPY App/package.json App/package-lock.json /app/App/
+WORKDIR /app/App
+RUN npm ci
+
+# ====== CAPA 3 (PYTHON DEPS) ======
+WORKDIR /app
+COPY Python/requirements.txt Python/requirements.txt
 RUN pip install -r Python/requirements.txt
 
-# Compilar núcleo C
+# ====== CAPA 4 (CORE C) ======
+COPY Core/ /app/Core/
 RUN make -C Core
 
-# Instalar dependencias de React/Tauri
-WORKDIR /app/App
-RUN npm install
+# ====== CAPA 5 (CÓDIGO VOLÁTIL) ======
+COPY . /app
 
-# Volver al directorio raíz
-WORKDIR /app
-
+# ====== RUNTIME ======
 CMD ["/bin/bash", "Scripts/run_all.sh"]

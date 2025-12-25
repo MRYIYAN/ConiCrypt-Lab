@@ -35,8 +35,6 @@ COPY ./Python /app/Python
 #--------------------------------#
 RUN pip install --no-cache-dir -r requirements.txt watchdog
 
-#--------------------------------#
-# Comando de ejecución con monitor de cambios
-#--------------------------------#
-# Si se modifica cualquier archivo .py o archivo JSON en /Data, el script se reejecuta
-CMD ["bash", "-c", "echo ' [PLOTTER] Watching for changes in Python scripts or data...'; while true; do python3 plot_conics.py; inotifywait -e modify,create,delete -r /app/Python /app/Data; echo ' [PLOTTER] Changes detected — re-running plot_conics.py'; done"]
+EXPOSE 5000
+
+CMD ["python3", "server.py"]

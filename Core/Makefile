@@ -1,13 +1,13 @@
-CC=gcc
-CFLAGS=-O2 -Wall -Wextra -Wpedantic -std=c11
-SRC=src/main.c src/conics.c src/ecc.c
-BIN=bin/conicrypt
+CC = gcc
+CFLAGS = -Wall -Wextra -std=c11 -I./src
+SRC = src/main.c src/conics.c src/ecc.c src/cjson/cJSON.c
+OUT = bin/conicrypt
 
 all:
 	mkdir -p bin
-	$(CC) $(SRC) -o $(BIN) $(CFLAGS)
+	$(CC) $(CFLAGS) $(SRC) -lm -o $(OUT)
 
 clean:
-	rm -rf bin
+	rm -f $(OUT)
 
 .PHONY: all clean

@@ -26,15 +26,7 @@ sleep 0.5
 echo -e "\033[1;33m[===============================================] 100%\033[0m"
 sleep 0.5
 echo -e "\033[1;32m Inicialización completada.\033[0m\n"
-# =====================================================
-# Compilación Tauri
-# =====================================================
-echo -e "\033[1;35m Compilando backend Rust (Tauri)...\033[0m"
-cd /app/App/src-tauri && cargo build --quiet \
-  && echo -e "\033[1;32m Compilado correctamente.\033[0m" \
-  || echo -e "\033[1;31m Error en compilación Rust.\033[0m"
-echo ""
-sleep 1
+
 
 # =====================================================
 # Verificación de dependencias GTK/WebKit/JSC

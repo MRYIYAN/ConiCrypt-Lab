@@ -2,8 +2,13 @@
 // LIB - Configuración y utilidades comunes (ConiCrypt Lab)
 //----------------------------------------------------------------//
 
-use std::{env, io::Write, time::Duration};
-use tokio::{net::TcpStream, time::sleep};
+use std::{
+    env,
+    io::Write,
+    net::TcpStream as StdTcpStream,
+    thread::sleep,
+    time::{Duration, Instant},
+};
 
 /// Configuración centralizada para la aplicación.
 ///
@@ -69,34 +74,74 @@ impl Config {
         Self::host_port_from_url(&self.plotter_url, "5001")
     }
 
-    /// Espera a que los servicios backend (Core y Plotter) estén disponibles.
-    ///
-    /// Realiza hasta 30 intentos de conexión TCP a los servicios backend.
-    /// Si no logra conectarse, aborta el proceso con un mensaje de error.
-    pub async fn wait_for_backends(&self) {
-        println!("[INIT] Esperando backend Docker (core/plotter)...");
-        for attempt in 1..=30 {
-            let core_up = TcpStream::connect(self.core_addr()).await.is_ok();
-            let plot_up = TcpStream::connect(self.plotter_addr()).await.is_ok();
+    /// Verifica si el Core responde mediante una solicitud HTTP síncrona.
+    pub fn core_alive(&self) -> bool {
+        reqwest::blocking::get(&self.core_url).is_ok()
+    }
 
-            if core_up && plot_up {
-                println!("[OK] Backend Docker disponible ");
+    /// Verifica si el Plotter responde mediante una solicitud HTTP síncrona.
+    pub fn plotter_alive(&self) -> bool {
+        reqwest::blocking::get(&self.plotter_url).is_ok()
+    }
+
+    /// Espera a que el backend Plotter esté disponible (solo Plotter, no Core).
+    pub async fn wait_for_backends(&self) {
+        println!("[INIT] Esperando backend Docker (plotter)...");
+
+        for attempt in 1..=30 {
+            let plotter_up = tokio::net::TcpStream::connect(self.plotter_addr()).await.is_ok();
+
+            if plotter_up {
+                println!("\n[OK] Plotter disponible");
                 return;
             }
 
             if attempt == 1 {
                 println!(
-                    "[WAIT] Aguardando servicios en {} y {} …",
-                    self.core_addr(),
+                    "[WAIT] Aguardando servicio en {} …",
                     self.plotter_addr()
                 );
             }
+
             print!(".");
             let _ = std::io::stdout().flush();
-            sleep(Duration::from_secs(2)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         }
 
-        eprintln!("\n[ERROR] Backend Docker no disponible ");
+        eprintln!("\n[ERROR] Plotter no disponible");
+        eprintln!("Asegúrate de ejecutar: docker compose up -d plotter");
+        std::process::exit(1);
+    }
+
+    /// Espera BLOQUEANTE a que los backends estén disponibles.
+    /// Usada ANTES de iniciar Tauri (seguro).
+    pub fn wait_for_backends_blocking(&self) {
+        let timeout = Duration::from_secs(60);
+        let start = Instant::now();
+
+        println!("[INIT] Esperando backend Docker (core/plotter)...");
+        print!(
+            "[WAIT] Aguardando servicios en {} y {} ",
+            self.core_addr(),
+            self.plotter_addr()
+        );
+        let _ = std::io::stdout().flush();
+
+        while start.elapsed() < timeout {
+            let core_up = StdTcpStream::connect(self.core_addr()).is_ok();
+            let plot_up = StdTcpStream::connect(self.plotter_addr()).is_ok();
+
+            if core_up && plot_up {
+                println!("\n[OK] Backend Docker disponible");
+                return;
+            }
+
+            print!(".");
+            let _ = std::io::stdout().flush();
+            sleep(Duration::from_secs(2));
+        }
+
+        eprintln!("\n[ERROR] Backend Docker no disponible");
         eprintln!("Asegúrate de ejecutar: docker compose up -d");
         std::process::exit(1);
     }

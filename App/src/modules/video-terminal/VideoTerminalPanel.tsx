@@ -173,304 +173,306 @@ export function VideoTerminalPanel() {
   };
 
   return (
-    <motion.div
-      ref={containerRef}
-      className="w-full h-full flex flex-col overflow-hidden"
-      style={{
-        rotateX: parallaxReady ? helmetRotateX : 0,
-        transformStyle: 'preserve-3d',
-        transformPerspective: 1000,
-        willChange: 'transform',
-      }}
-      transition={{ type: 'spring', stiffness: 18, damping: 40 }}
-    >
-      {/* Encabezado del módulo */}
+    <>
+      {/* Header fuera del contenedor parallax */}
       <Header moduleName="biometric-analysis" />
 
-      {/* Video Section */}
-      <div className="min-h-[50vh] max-h-[60vh] p-6 flex items-center justify-center bg-black/20">
-        <AnimatePresence mode="wait">
-          {!isStreaming ? (
-            <motion.button
-              key="start-button"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.85, opacity: 0 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              onClick={startCamera}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.97 }}
-              className="
-                relative z-30
-                flex flex-col items-center justify-center
-                px-20 py-16
-                min-w-90 min-h-65
-                rounded-3xl
-                bg-linear-to-br from-[#6366f1] to-[#8b5cf6]
-                shadow-[0_20px_60px_rgba(123,92,246,0.45)]
-                transition-all
-              "
-            >
-              {/* Icono en círculo */}
-              <div className="mb-7 flex items-center justify-center">
-                <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center">
-                  <Camera className="w-12 h-12 text-white" />
+      <motion.div
+        ref={containerRef}
+        className="w-full h-full overflow-hidden flex flex-col"
+        style={{
+          rotateX: parallaxReady ? helmetRotateX : 0,
+          transformStyle: 'preserve-3d',
+          transformPerspective: 1000,
+          willChange: 'transform',
+        }}
+        transition={{ type: 'spring', stiffness: 18, damping: 40 }}
+      >
+        {/* Video Section */}
+        <div className="min-h-[50vh] max-h-[60vh] p-6 flex items-center justify-center bg-black/20">
+          <AnimatePresence mode="wait">
+            {!isStreaming ? (
+              <motion.button
+                key="start-button"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.85, opacity: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+                onClick={startCamera}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+                className="
+                  relative z-30
+                  flex flex-col items-center justify-center
+                  px-20 py-16
+                  min-w-90 min-h-65
+                  rounded-3xl
+                  bg-linear-to-br from-[#6366f1] to-[#8b5cf6]
+                  shadow-[0_20px_60px_rgba(123,92,246,0.45)]
+                  transition-all
+                "
+              >
+                {/* Icono en círculo */}
+                <div className="mb-7 flex items-center justify-center">
+                  <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center">
+                    <Camera className="w-12 h-12 text-white" />
+                  </div>
                 </div>
-              </div>
 
-              <h2 className="text-white text-3xl font-semibold tracking-tight mb-3">
-                Iniciar Captura
-              </h2>
-              <p className="text-white/70 text-sm">
-                Click para activar la cámara
-              </p>
-            </motion.button>
-          ) : (
-            <motion.div
-              key="video-panel"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              style={{
-                x: parallaxReady ? panelX : 0,
-                y: parallaxReady ? panelY : 0,
-              }}
-              className="w-full h-full rounded-xl 
-                         border border-[#3B4BFF]/20
-                         bg-[#0b0b14]/70
-                         shadow-[0_0_40px_rgba(59,75,255,0.12)]
-                         overflow-hidden flex flex-col"
-            >
-              {/* Video Header as REAL PANEL */}
+                <h2 className="text-white text-3xl font-semibold tracking-tight mb-3">
+                  Iniciar Captura
+                </h2>
+                <p className="text-white/70 text-sm">
+                  Click para activar la cámara
+                </p>
+              </motion.button>
+            ) : (
               <motion.div
-                className="relative rounded-xl p-0.5"
+                key="video-panel"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
                 style={{
                   x: parallaxReady ? panelX : 0,
                   y: parallaxReady ? panelY : 0,
                 }}
-                transition={{ type: 'spring', stiffness: 18, damping: 40 }}
+                className="w-full h-full rounded-xl 
+                           border border-[#3B4BFF]/20
+                           bg-[#0b0b14]/70
+                           shadow-[0_0_40px_rgba(59,75,255,0.12)]
+                           overflow-hidden flex flex-col"
               >
-                {/* Glow around header */}
+                {/* Video Header as REAL PANEL */}
                 <motion.div
-                  className={styles.glowBorder}
+                  className="relative rounded-xl p-0.5"
                   style={{
-                    x: parallaxReady ? borderX : 0,
-                    y: parallaxReady ? borderY : 0,
+                    x: parallaxReady ? panelX : 0,
+                    y: parallaxReady ? panelY : 0,
                   }}
-                  transition={{ type: 'spring', stiffness: 16, damping: 45 }}
-                />
-                {/* Real header panel */}
-                <motion.div className={`${styles.panel} ${styles.curvedPanel} rounded-xl overflow-hidden`}>
-                  {/* Header bar with inner micro-parallax */}
+                  transition={{ type: 'spring', stiffness: 18, damping: 40 }}
+                >
+                  {/* Glow around header */}
                   <motion.div
-                    className="flex items-center justify-between px-6 py-4 
-                               bg-black/40 backdrop-blur-[2px]
-                               border-b border-[#3B4BFF]/10"
+                    className={styles.glowBorder}
                     style={{
-                      x: parallaxReady ? innerX : 0,
-                      y: parallaxReady ? innerY : 0,
+                      x: parallaxReady ? borderX : 0,
+                      y: parallaxReady ? borderY : 0,
                     }}
-                    transition={{ type: 'spring', stiffness: 30, damping: 40 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-linear-to-br from-[#6366f1] to-[#8b5cf6]">
-                        <Camera className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <motion.h2
-                          style={{
-                            x: parallaxReady ? innerX : 0,
-                            y: parallaxReady ? innerY : 0,
-                          }}
-                          transition={{ type: 'spring', stiffness: 30, damping: 40 }}
-                          className="text-white"
-                        >
-                          <TypingText text="Captura de Video" speed={60} cursorDelay={2000} />
-                        </motion.h2>
-                        <p className="text-sm text-gray-400">Señal de cámara en tiempo real</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={stopCamera}
-                      className="px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 transition-colors flex items-center gap-2"
+                    transition={{ type: 'spring', stiffness: 16, damping: 45 }}
+                  />
+                  {/* Real header panel */}
+                  <motion.div className={`${styles.panel} ${styles.curvedPanel} rounded-xl overflow-hidden`}>
+                    {/* Header bar with inner micro-parallax */}
+                    <motion.div
+                      className="flex items-center justify-between px-6 py-4 
+                                 bg-black/40 backdrop-blur-[2px]
+                                 border-b border-[#3B4BFF]/10"
+                      style={{
+                        x: parallaxReady ? innerX : 0,
+                        y: parallaxReady ? innerY : 0,
+                      }}
+                      transition={{ type: 'spring', stiffness: 30, damping: 40 }}
                     >
-                      <X className="w-4 h-4" />
-                      Detener
-                    </button>
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-linear-to-br from-[#6366f1] to-[#8b5cf6]">
+                          <Camera className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <motion.h2
+                            style={{
+                              x: parallaxReady ? innerX : 0,
+                              y: parallaxReady ? innerY : 0,
+                            }}
+                            transition={{ type: 'spring', stiffness: 30, damping: 40 }}
+                            className="text-white"
+                          >
+                            <TypingText text="Captura de Video" speed={60} cursorDelay={2000} />
+                          </motion.h2>
+                          <p className="text-sm text-gray-400">Señal de cámara en tiempo real</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={stopCamera}
+                        className="px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 transition-colors flex items-center gap-2"
+                      >
+                        <X className="w-4 h-4" />
+                        Detener
+                      </button>
+                    </motion.div>
                   </motion.div>
                 </motion.div>
-              </motion.div>
 
-              {/* Video Display (inner parallax) */}
-              <motion.div
-                className="flex-1 flex items-center justify-center p-6"
-                style={{
-                  x: parallaxReady ? innerX : 0,
-                  y: parallaxReady ? innerY : 0,
-                }}
-                transition={{ type: 'spring', stiffness: 30, damping: 40 }}
-              >
-                {streamError ? (
-                  <div className="flex flex-col items-center gap-4 text-gray-400">
-                    <div className="p-6 rounded-full bg-[#1a1a2f] border border-[#2a2a3f]">
-                      <CameraOff className="w-12 h-12" />
+                {/* Video Display (inner parallax) */}
+                <motion.div
+                  className="flex-1 flex items-center justify-center p-6"
+                  style={{
+                    x: parallaxReady ? innerX : 0,
+                    y: parallaxReady ? innerY : 0,
+                  }}
+                  transition={{ type: 'spring', stiffness: 30, damping: 40 }}
+                >
+                  {streamError ? (
+                    <div className="flex flex-col items-center gap-4 text-gray-400">
+                      <div className="p-6 rounded-full bg-[#1a1a2f] border border-[#2a2a3f]">
+                        <CameraOff className="w-12 h-12" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-red-400">{streamError}</p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <p className="text-sm text-red-400">{streamError}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-contain rounded-lg"
-                  />
-                )}
+                  ) : (
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  )}
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            )}
+          </AnimatePresence>
+        </div>
 
-      {/* Spacer between video and results */}
-      <div className="h-6 md:h-8 shrink-0" />
+        {/* Spacer between video and results */}
+        <div className="h-6 md:h-8 shrink-0" />
 
-      {/* Results Section Wrapper */}
-      <div className="w-full flex justify-center pb-20">
-        <div className="w-full max-w-450 px-4 md:px-6">
-          <motion.div
-            className="relative rounded-2xl p-0.5"
-            style={{
-              x: parallaxReady ? panelX : 0,
-              y: parallaxReady ? panelY : 0,
-            }}
-            transition={{ type: 'spring', stiffness: 18, damping: 42 }}
-          >
-            {/* Border Glow as sibling */}
+        {/* Results Section Wrapper */}
+        <div className="w-full flex justify-center pb-20">
+          <div className="w-full max-w-450 px-4 md:px-6">
             <motion.div
-              className={styles.glowBorder}
-              style={{
-                x: parallaxReady ? borderX : 0,
-                y: parallaxReady ? borderY : 0,
-              }}
-              transition={{ type: 'spring', stiffness: 16, damping: 45 }}
-            />
-
-            {/* Real Panel */}
-            <motion.div
-              className="
-                relative z-10 rounded-2xl bg-black/30
-                border border-[#3B4BFF]/20
-                py-2
-                flex flex-col
-                min-h-[26vh]
-                max-h-[40vh]
-                sm:max-h-[42vh]
-                md:max-h-[46vh]
-                lg:max_h-[52vh]
-                xl:max-h-[58vh]
-              "
+              className="relative rounded-2xl p-0.5"
               style={{
                 x: parallaxReady ? panelX : 0,
                 y: parallaxReady ? panelY : 0,
               }}
               transition={{ type: 'spring', stiffness: 18, damping: 42 }}
             >
-              <div className="pb-2">
-                {/* Table Header */}
-                <div
-                  className="
-                    flex items-center gap-3
-                    px-6 py-4
-                    bg-black/40
-                    border-b border-[#3B4BFF]/15
-                    backdrop-blur-[1px]
-                  "
-                >
-                  <div className="p-2 rounded-lg bg-[#6366f1]/20">
-                    <Activity className="w-5 h-5 text-[#6366f1]" />
-                  </div>
-                  <h3 className="text-white font-medium tracking-wide">
-                    <TypingText text="Resultados Vectoriales" cursorDelay={2000} />
-                  </h3>
-                </div>
-              </div>
-
-              {/* Table Content (inner parallax) */}
+              {/* Border Glow as sibling */}
               <motion.div
-                className="px-1"
+                className={styles.glowBorder}
                 style={{
-                  x: parallaxReady ? innerX : 0,
-                  y: parallaxReady ? innerY : 0,
+                  x: parallaxReady ? borderX : 0,
+                  y: parallaxReady ? borderY : 0,
                 }}
-                transition={{ type: 'spring', stiffness: 30, damping: 40 }}
+                transition={{ type: 'spring', stiffness: 16, damping: 45 }}
+              />
+
+              {/* Real Panel */}
+              <motion.div
+                className="
+                  relative z-10 rounded-2xl bg-black/30
+                  border border-[#3B4BFF]/20
+                  py-2
+                  flex flex-col
+                  min-h-[26vh]
+                  max-h-[40vh]
+                  sm:max-h-[42vh]
+                  md:max-h-[46vh]
+                  lg:max_h-[52vh]
+                  xl:max-h-[58vh]
+                "
+                style={{
+                  x: parallaxReady ? panelX : 0,
+                  y: parallaxReady ? panelY : 0,
+                }}
+                transition={{ type: 'spring', stiffness: 18, damping: 42 }}
               >
-                <div className="flex-1 overflow-y-auto bg-transparent scrollbar-thin scrollbar-thumb-[#6366f1]/40 scrollbar-track-transparent">
-                  <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-black/50 backdrop-blur-[1px]">
-                      <tr>
-                        {['Timestamp', 'Característica', 'Vectores', 'Confianza', 'Estado'].map((h) => (
-                          <th
-                            key={h}
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider border-r border-[#3B4BFF]/10 last:border-r-0"
-                          >
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {staticResults.map((result) => (
-                        <tr
-                          key={result.id}
-                          className="
-                            border-b border-[#3B4BFF]/5
-                            hover:bg-white/5
-                            transition-colors
-                          "
-                        >
-                          <td className="px-6 py-3 text-gray-300 font-mono text-xs border-r border-[#3B4BFF]/5 last:border-r-0">{result.timestamp}</td>
-                          <td className="px-6 py-3 text-gray-200 border-r border-[#3B4BFF]/5 last:border-r-0">{result.feature}</td>
-                          <td className="px-6 py-3 text-[#6366f1] font-mono text-xs border-r border-[#3B4BFF]/5 last:border-r-0">{result.vectors}</td>
-                          <td className="px-6 py-3 border-r border-[#3B4BFF]/5 last:border-r-0">
-                            <div className="flex items-center gap-2">
-                              <div className="w-24 h-1.5 bg-[#1a1a2f] rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-linear-to-r from-[#6366f1] to-[#8b5cf6]"
-                                  style={{ width: `${result.confidence * 100}%` }}
-                                />
-                              </div>
-                              <span className="text-gray-300 text-xs">
-                                {(result.confidence * 100).toFixed(1)}%
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-3 border-r border-[#3B4BFF]/5 last:border-r-0">
-                            <span
-                              className={`px-2 py-1 rounded text-xs ${
-                                result.status === 'success'
-                                  ? 'bg-green-500/20 text-green-400'
-                                  : result.status === 'processing'
-                                  ? 'bg-blue-500/20 text-blue-400'
-                                  : 'bg-red-500/20 text-red-400'
-                              }`}
-                            >
-                              {result.status === 'success' ? 'Completo' : 'Procesando'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="pb-2">
+                  {/* Table Header */}
+                  <div
+                    className="
+                      flex items-center gap-3
+                      px-6 py-4
+                      bg-black/40
+                      border-b border-[#3B4BFF]/15
+                      backdrop-blur-[1px]
+                    "
+                  >
+                    <div className="p-2 rounded-lg bg-[#6366f1]/20">
+                      <Activity className="w-5 h-5 text-[#6366f1]" />
+                    </div>
+                    <h3 className="text-white font-medium tracking-wide">
+                      <TypingText text="Resultados Vectoriales" cursorDelay={2000} />
+                    </h3>
+                  </div>
                 </div>
+
+                {/* Table Content (inner parallax) */}
+                <motion.div
+                  className="px-1"
+                  style={{
+                    x: parallaxReady ? innerX : 0,
+                    y: parallaxReady ? innerY : 0,
+                  }}
+                  transition={{ type: 'spring', stiffness: 30, damping: 40 }}
+                >
+                  <div className="flex-1 overflow-y-auto bg-transparent scrollbar-thin scrollbar-thumb-[#6366f1]/40 scrollbar-track-transparent">
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 bg-black/50 backdrop-blur-[1px]">
+                        <tr>
+                          {['Timestamp', 'Característica', 'Vectores', 'Confianza', 'Estado'].map((h) => (
+                            <th
+                              key={h}
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider border-r border-[#3B4BFF]/10 last:border-r-0"
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {staticResults.map((result) => (
+                          <tr
+                            key={result.id}
+                            className="
+                              border-b border-[#3B4BFF]/5
+                              hover:bg-white/5
+                              transition-colors
+                            "
+                          >
+                            <td className="px-6 py-3 text-gray-300 font-mono text-xs border-r border-[#3B4BFF]/5 last:border-r-0">{result.timestamp}</td>
+                            <td className="px-6 py-3 text-gray-200 border-r border-[#3B4BFF]/5 last:border-r-0">{result.feature}</td>
+                            <td className="px-6 py-3 text-[#6366f1] font-mono text-xs border-r border-[#3B4BFF]/5 last:border-r-0">{result.vectors}</td>
+                            <td className="px-6 py-3 border-r border-[#3B4BFF]/5 last:border-r-0">
+                              <div className="flex items-center gap-2">
+                                <div className="w-24 h-1.5 bg-[#1a1a2f] rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-linear-to-r from-[#6366f1] to-[#8b5cf6]"
+                                    style={{ width: `${result.confidence * 100}%` }}
+                                  />
+                                </div>
+                                <span className="text-gray-300 text-xs">
+                                  {(result.confidence * 100).toFixed(1)}%
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-3 border-r border-[#3B4BFF]/5 last:border-r-0">
+                              <span
+                                className={`px-2 py-1 rounded text-xs ${
+                                  result.status === 'success'
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : result.status === 'processing'
+                                    ? 'bg-blue-500/20 text-blue-400'
+                                    : 'bg-red-500/20 text-red-400'
+                                }`}
+                              >
+                                {result.status === 'success' ? 'Completo' : 'Procesando'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </motion.div>
               </motion.div>
             </motion.div>
-          </motion.div>
+          </div>
         </div>
-      </div>
 
-      <div className="pb-24" />
-    </motion.div>
+        <div className="pb-24" />
+      </motion.div>
+    </>
   );
 }

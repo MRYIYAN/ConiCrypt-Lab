@@ -8,34 +8,22 @@
 // Módulos y dependencias
 //--------------------------------//
 
-use tauri_appconicrypt_lab_lib as lib; 
+use tauri_appconicrypt_lab_lib as lib;
+use lib::Config;
+
 mod ws;
 
-use crate::lib::Config;
-
-/// Comando Tauri: ping
-///
-/// Este comando es invocado desde el frontend y retorna "pong".
 #[tauri::command]
 fn ping() -> String {
     "pong".into()
 }
 
-//--------------------------------//
-// Función principal
-//--------------------------------//
-///
-/// - Espera a que los backends (core y plotter) estén disponibles.
-/// - Lanza el servidor WebSocket en segundo plano.
-/// - Inicia la aplicación Tauri para la interfaz de usuario.
-///
-/// # Detalles
-/// - El servidor WebSocket escucha en el puerto configurado.
-/// - La aplicación Tauri expone comandos al frontend.
 #[tokio::main]
 async fn main() {
-    // Esperar backends antes de iniciar
+    // 1️ Cargar configuración
     let config = Config::load();
+
+    // 2️ Bloqueo controlado: esperamos a core y plotter antes de Tauri
     config.wait_for_backends().await;
 
     println!(
@@ -45,13 +33,13 @@ async fn main() {
         config.ws_address()
     );
 
-    // Lanzar servidor WS asíncrono
+    // 3️ Lanzar WS en background con Tokio
     let ws_config = config.clone();
     tokio::spawn(async move {
         ws::start_ws_server(ws_config).await;
     });
 
-    // Iniciar Tauri
+    // 4️ Arrancar Tauri una vez que los servicios están listos
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![ping])
         .run(tauri::generate_context!())

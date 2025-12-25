@@ -26,8 +26,6 @@ services:
     container_name: conicrypt_core
     networks:
       - conicrypt_net
-    ports:
-      - "5000:5000"     #  expone puerto 5000 al host
     volumes:
       - ../Core:/app/Core
       - ../Data:/app/Data
@@ -54,20 +52,20 @@ services:
       context: ..
       dockerfile: Docker/Dockerfile.python
     container_name: conicrypt_plotter
+    env_file:
+      - .env
     networks:
       - conicrypt_net
     ports:
-      - "5001:5001"     #  expone puerto 5001 al host
+      - "5001:5000"
     volumes:
       - ../Python:/app/Python
+      - ../Core:/app/Core
       - ../Data:/app/Data
       - ../Output:/app/Output
-    extra_hosts:
-      - host.docker.internal:host-gateway
     depends_on:
       - core
     tty: true
-    command: ["bash", "-c", "while inotifywait -e modify /app/Data/conic.json; do python3 /app/Python/plot_conics.py; done"]
 
   #==============================#
   # Interfaz de escritorio React + Tauri
@@ -77,20 +75,20 @@ services:
       context: ..
       dockerfile: Docker/Dockerfile.frontend
     container_name: conicrypt_app
+    env_file:
+      - .env
     networks:
       - conicrypt_net
     ports:
-      - "1421:1420"  # solo puerto del front si lo usas
-    environment:
-      - WS_HOST=host.docker.internal
-      - WS_PORT=9191
-      - CORE_URL=http://host.docker.internal:5000   #  para Tauri/React
-      - PLOTTER_URL=http://host.docker.internal:5001
+      - "1421:1420"  # solo puerto del front 
     volumes:
       - ../App:/app/App
       - ../Data:/app/Data
       - ../Output:/app/Output
       - ./startup_app.sh:/usr/local/bin/startup_app.sh
+      - cargo-registry:/root/.cargo/registry
+      - cargo-git:/root/.cargo/git
+      - tauri-target:/app/App/src-tauri/target
     extra_hosts:
       - host.docker.internal:host-gateway
     depends_on:
@@ -105,3 +103,8 @@ services:
       echo "====================================================";
       chmod +x /usr/local/bin/startup_app.sh;
       /usr/local/bin/startup_app.sh'
+
+volumes:
+  cargo-registry:
+  cargo-git:
+  tauri-target:
