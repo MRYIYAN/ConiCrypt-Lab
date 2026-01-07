@@ -309,19 +309,18 @@ export function ConicAnalysis() {
     : [0, 0, 100];
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-screen flex flex-col overflow-hidden">
       <div
         ref={containerRef}
-        className="relative w-full h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-[#3B4BFF]/60 scrollbar-track-[#181830]/60"
-        style={{ maxHeight: '100vh' }}
+        className="relative w-full flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-[#3B4BFF]/60 scrollbar-track-[#181830]/60"
       >
         {/* HEADER GLOBAL */}
         <Header moduleName="Conic Analysis" />
         {}
-        <div className="h-full p-6 overflow-visible relative">
+        <div className="p-6 overflow-visible relative">
           {/* Global wrapper (congelado hasta parallaxReady) */}
           <motion.div
-            className="h-full grid grid-rows-[1fr_auto] gap-6"
+            className="grid grid-rows-[minmax(0,1fr)_auto] gap-6"
             style={{
               rotateX: parallaxReady ? helmetRotateX : 0,
               transformStyle: 'preserve-3d',
@@ -510,7 +509,7 @@ export function ConicAnalysis() {
                 <motion.div
                   style={{ x: parallaxReady ? panelX : 0, y: parallaxReady ? panelY : 0 }}
                   transition={{ type: 'spring', stiffness: 20, damping: 40 }}
-                  className={`${styles.visualization} ${styles.curvedPanel} flex-1 rounded-xl overflow-hidden`}
+                  className={`${styles.visualization} h-full min-h-0 rounded-xl overflow-hidden ${styles.curvedPanel}`}
                 >
                   <motion.div
                     style={{ x: parallaxReady ? innerX : 0, y: parallaxReady ? innerY : 0 }}
@@ -571,7 +570,7 @@ export function ConicAnalysis() {
                             </div>
                           </div>
                         ) : (
-                          <Canvas orthographic>
+                          <Canvas orthographic style={{ width: '100%', height: '100%' }}>
                             <OrthographicCamera
                               makeDefault
                               position={visualCenter as [number, number, number]}
@@ -637,7 +636,7 @@ export function ConicAnalysis() {
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               style={{ x: parallaxReady ? panelX : 0, y: parallaxReady ? panelY : 0 }}
-              className={`${styles.panel} ${styles.curvedPanel} h-50 rounded-xl overflow-hidden`}
+              className={`${styles.panel} ${styles.curvedPanel} min-h-50 rounded-xl overflow-hidden`}
             >
               {loading ? (
                 <div className="h-full flex items-center justify-center">
