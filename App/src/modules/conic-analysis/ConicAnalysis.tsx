@@ -50,9 +50,23 @@ type ConicResult = {
 
 export function ConicAnalysis() {
   const containerRef = useRef<HTMLDivElement>(null);
+  // motion values SOLO para el root motion.div
+  const px = useMotionValue(0);
+  const py = useMotionValue(0);
+  const tilt = useMotionValue(0);
+
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const [parallaxReady, setParallaxReady] = useState(false);
+
+  // Velocity gate refs
+  const lastPos = useRef({ x: 0, y: 0 });
+  const lastTime = useRef(performance.now());
+  // Suavizado (low-pass)
+  const smoothPos = useRef({ x: 0, y: 0 });
+
+
+  const containerRect = useRef<DOMRect | null>(null);
 
   // Internal content micro-movement: ±4px / ±2.5px
   const innerX = useTransform(mouseX, [-300, 300], [-4, 4]);
@@ -63,37 +77,67 @@ export function ConicAnalysis() {
   const panelY = useTransform(mouseY, [-300, 300], [-0.8, 0.8]);
 
   // Curvatura global tipo casco: calcula rotateX directamente desde mouseX/mouseY
-  const helmetRotateX = useTransform(
-    [mouseX, mouseY],
-    (values: number[]) => {
-      const [x = 0, y = 0] = values;
-      const baseTilt = 1.2;                 // inclinación constante hacia abajo
-      const verticalInfluence = -y * 0.002; // micro variación vertical
-      const lateralInfluence = Math.abs(x) * 0.001; // al ir a los lados, cae más
-      return baseTilt + verticalInfluence + lateralInfluence;
-    }
-  );
+
 
 
   // Inicializa el mouse SOLO cuando hay movimiento real y el layout está listo
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return;
+      const rect = containerRect.current;
+      if (!rect) return;
+
+      const now = performance.now();
+      const dx = e.clientX - lastPos.current.x;
+      const dy = e.clientY - lastPos.current.y;
+      const dt = now - lastTime.current;
+
+      lastPos.current = { x: e.clientX, y: e.clientY };
+      lastTime.current = now;
 
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
 
-      mouseX.set(e.clientX - centerX);
-      mouseY.set(e.clientY - centerY);
+      const targetX = e.clientX - centerX;
+      const targetY = e.clientY - centerY;
+
+      const speed = Math.sqrt(dx * dx + dy * dy) / Math.max(dt, 1);
+      const smoothing = speed > 1.2 ? 0.045 : 0.1;
+
+      smoothPos.current.x += (targetX - smoothPos.current.x) * smoothing;
+      smoothPos.current.y += (targetY - smoothPos.current.y) * smoothing;
+
+      // motion values SOLO aquí
+      px.set(smoothPos.current.x);
+      py.set(smoothPos.current.y);
+      tilt.set(1.2 - smoothPos.current.y * 0.002 + Math.abs(smoothPos.current.x) * 0.001);
 
       if (!parallaxReady) setParallaxReady(true);
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY, parallaxReady]);
+  }, [parallaxReady]);
+
+  // 🧩 CAMBIO 2 — Nuevo useEffect (solo layout)
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const updateRect = () => {
+      containerRect.current = containerRef.current!.getBoundingClientRect();
+    };
+
+    updateRect();
+
+    const resizeObserver = new ResizeObserver(updateRect);
+    resizeObserver.observe(containerRef.current);
+
+    window.addEventListener('scroll', updateRect, { passive: true });
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('scroll', updateRect);
+    };
+  }, []);
 
   const [coefficients, setCoefficients] = useState<ConicCoefficients>({
     A: '4',
@@ -320,15 +364,14 @@ export function ConicAnalysis() {
         <div className="p-6 overflow-visible relative">
           {/* Global wrapper (congelado hasta parallaxReady) */}
           <motion.div
-            className="grid grid-rows-[minmax(0,1fr)_auto] gap-6"
-            style={{
-              rotateX: parallaxReady ? helmetRotateX : 0,
-              transformStyle: 'preserve-3d',
-              transformPerspective: 1000,
-              willChange: 'transform',
-            }}
-            transition={{ type: 'spring', stiffness: 18, damping: 40, delay: parallaxReady ? 0 : 0.15 }}
-          >
+          style={{
+            '--px': px,
+            '--py': py,
+            rotateX: tilt,
+          } as any}
+          className="parallax-root grid grid-rows-[minmax(0,1fr)_auto] gap-6"
+          transition={{ type: 'tween', duration: 0.08, ease: 'linear' }}
+        >
             {/* FILA SUPERIOR - EDITOR Y VISUALIZACIÓN */}
             <div className={`${styles.topGrid} gap-6`}>
               {/* PANEL IZQUIERDO - EDITOR DE FÓRMULAS */}
@@ -347,7 +390,7 @@ export function ConicAnalysis() {
                         x: parallaxReady ? innerX : 0,
                         y: parallaxReady ? innerY : 0,
                       }}
-                      transition={{ type: 'spring', stiffness: 30, damping: 40 }}
+                      transition={{ type: 'tween', duration: 0.08, ease: 'linear' }}
                       className="text-xl text-white tracking-tight"
                     >
                       <TypingText text="Editor de Fórmulas" cursorDelay={2000} />
@@ -359,13 +402,13 @@ export function ConicAnalysis() {
                 {/* Panel del Editor (x/y congelados hasta parallaxReady) */}
                 <motion.div
                   style={{ x: parallaxReady ? panelX : 0, y: parallaxReady ? panelY : 0 }}
-                  transition={{ type: 'spring', stiffness: 20, damping: 40 }}
+                  transition={{ type: 'tween', duration: 0.08, ease: 'linear' }}
                   className={`${styles.panel} ${styles.curvedPanel} flex-1 rounded-xl overflow-hidden`}
                 >
                   {/* Contenido interno (x/y congelados hasta parallaxReady) */}
                   <motion.div
                     style={{ x: parallaxReady ? innerX : 0, y: parallaxReady ? innerY : 0, pointerEvents: 'auto' }}
-                    transition={{ type: 'spring', stiffness: 30, damping: 40 }}
+                    transition={{ type: 'tween', duration: 0.08, ease: 'linear' }}
                     className="flex flex-col h-full pointer-events-auto"
                   >
                     {/* Toolbar del editor */}
@@ -483,7 +526,7 @@ export function ConicAnalysis() {
                           x: parallaxReady ? innerX : 0,
                           y: parallaxReady ? innerY : 0,
                         }}
-                        transition={{ type: 'spring', stiffness: 30, damping: 40 }}
+                        transition={{ type: 'tween', duration: 0.08, ease: 'linear' }}
                         className="text-xl text-white tracking-tight"
                       >
                         <TypingText text="Visualización" speed={60} cursorDelay={2000} />
@@ -508,12 +551,12 @@ export function ConicAnalysis() {
                 {/* Canvas de Visualización (x/y congelados hasta parallaxReady) */}
                 <motion.div
                   style={{ x: parallaxReady ? panelX : 0, y: parallaxReady ? panelY : 0 }}
-                  transition={{ type: 'spring', stiffness: 20, damping: 40 }}
+                  transition={{ type: 'tween', duration: 0.08, ease: 'linear' }}
                   className={`${styles.visualization} h-full min-h-0 rounded-xl overflow-hidden ${styles.curvedPanel}`}
                 >
                   <motion.div
                     style={{ x: parallaxReady ? innerX : 0, y: parallaxReady ? innerY : 0 }}
-                    transition={{ type: 'spring', stiffness: 30, damping: 40 }}
+                    transition={{ type: 'tween', duration: 0.08, ease: 'linear' }}
                     className="relative w-full h-full flex items-center justify-center"
                   >
                     {/* Grid sutil */}
@@ -636,6 +679,7 @@ export function ConicAnalysis() {
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               style={{ x: parallaxReady ? panelX : 0, y: parallaxReady ? panelY : 0 }}
+              transition={{ type: 'tween', duration: 0.08, ease: 'linear' }}
               className={`${styles.panel} ${styles.curvedPanel} min-h-50 rounded-xl overflow-hidden`}
             >
               {loading ? (
@@ -650,7 +694,7 @@ export function ConicAnalysis() {
               ) : (
                 <motion.div
                   style={{ x: parallaxReady ? innerX : 0, y: parallaxReady ? innerY : 0 }}
-                  transition={{ type: 'spring', stiffness: 28, damping: 40 }}
+                  transition={{ type: 'tween', duration: 0.08, ease: 'linear' }}
                   className="h-full"
                 >
                   {/* Header del panel */}
