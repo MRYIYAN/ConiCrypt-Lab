@@ -2,3 +2,6 @@ matplotlib
 websockets
 flask
 flask-cors
+cv2
+mediapipe
+numpy
