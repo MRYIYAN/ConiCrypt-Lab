@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Hands, Results } from '@mediapipe/hands';
 import { Camera } from '@mediapipe/camera_utils';
 
@@ -11,38 +11,47 @@ export interface HandTrackingResult {
 
 interface HandTrackingProps {
   enable: boolean;
-  videoRef: React.RefObject<HTMLVideoElement> | null;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>; // Añadido del canvasRef
   onResult: (result: HandTrackingResult) => void;
 }
 
 export function HandTracking({
   enable,
   videoRef,
+  canvasRef, // Añadido a las props
   onResult,
 }: HandTrackingProps) {
-  const [status, setStatus] =
-    useState<'Conseguido' | 'Procesando' | 'Error'>('Procesando');
+
 
   const handsRef = useRef<Hands | null>(null);
   const cameraRef = useRef<Camera | null>(null);
 
   useEffect(() => {
-    // Si no estÃ¡ activo, limpiamos
+    // Si no esta activo, limpiamos
     if (!enable || !videoRef.current) {
       cameraRef.current?.stop();
       handsRef.current?.close();
       cameraRef.current = null;
       handsRef.current = null;
-      setStatus('Procesando');
       return;
     }
+
+    // Obtener el contexto del canvas y ajustar tamaño
+    const video = videoRef.current;
+    const canvas = canvasRef?.current;
+    if (!video || !canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
     //  Evitar inicializar dos veces
     if (handsRef.current) return;
 
     //  Crear MediaPipe Hands
     const hands = new Hands({
-      locateFile: (file) =>
+      locateFile: (file: string) =>
         `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
     });
 
@@ -56,16 +65,47 @@ export function HandTracking({
    
     hands.onResults((results: Results) => {
       if (!results.multiHandLandmarks?.length) {
-        setStatus('Procesando');
         return;
       }
 
+      // 1. limpiar canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       const landmarks = results.multiHandLandmarks[0];
-      const puntos = landmarks.map(lm => [lm.x, lm.y, lm.z]);
+
+      // 2. dibujar puntos (landmarks)
+      landmarks.forEach(lm => {
+        const x = lm.x * canvas.width;
+        const y = lm.y * canvas.height;
+
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#8b5cf6'; // morado 
+        ctx.fill();
+      });
+
+      const puntos = landmarks.map((lm: { x: number; y: number; z: number }) => [
+        lm.x,
+        lm.y,
+        lm.z,
+      ]);
 
       const wrist = puntos[0];
       const fingerIdx = [4, 8, 12, 16, 20];
 
+      // dibujar vectores muñeca  dedos
+      fingerIdx.forEach(idx => {
+        const tip = landmarks[idx];
+
+        ctx.beginPath();
+        ctx.moveTo(wrist[0] * canvas.width, wrist[1] * canvas.height);
+        ctx.lineTo(tip.x * canvas.width, tip.y * canvas.height);
+        ctx.strokeStyle = '#6366f1'; // azul 
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+
+      // 4. calcular datos
       const vectors = fingerIdx.map(i => {
         const p = puntos[i];
         return [
@@ -75,23 +115,29 @@ export function HandTracking({
         ];
       });
 
+      // 5. onResult(...)
       onResult({
         vectors,
         timeStamp: new Date().toISOString(),
         feature: 'Vectores mano',
-        status: status,
+        status: 'Conseguido',
       });
-
-      setStatus('Conseguido');
     });
 
     handsRef.current = hands;
 
 
-    const camera = new Camera(videoRef.current, {
+    const camera = new Camera(video, {
       onFrame: async () => {
-        if (!handsRef.current || !videoRef.current) return;
-        await handsRef.current.send({ image: videoRef.current });
+        if (!handsRef.current || !video) return;
+
+        // Ajustar tamaño del canvas en cada frame 
+        if (canvas.width !== video.videoWidth) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        }
+
+        await handsRef.current.send({ image: video });
       },
       width: 640,
       height: 480,

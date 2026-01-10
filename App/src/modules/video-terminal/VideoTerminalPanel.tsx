@@ -1,4 +1,4 @@
-import { use, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera, CameraOff, Activity, X } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { Header } from './../Header/Header';
@@ -69,6 +69,7 @@ const staticResults: BiometricResult[] = [
 
 export function VideoTerminalPanel() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null); // 1️⃣ Añadido ref del canvas
   const containerRef = useRef<HTMLDivElement>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
@@ -173,7 +174,7 @@ export function VideoTerminalPanel() {
     setStreamError(null);
   };
   
-  const [handResult, setHandResult] = useState<BiometricResult | null>(null);
+  // Eliminado handResult, no se usa
   const [results, setResults] = useState<BiometricResult[]>(staticResults);
 
 
@@ -328,30 +329,37 @@ export function VideoTerminalPanel() {
                     </div>
                   ) : (
                     <>
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      className="w-full h-full object-contain rounded-lg"
-                    />
-                      <HandTracking
-                        enable={isStreaming && !streamError}
-                        videoRef={videoRef}
-                        onResult={(result: HandTrackingResult)=>{
-                          const biometric: BiometricResult = {
-                            id: crypto.randomUUID(),
-                            timestamp: new Date(result.timeStamp).toLocaleTimeString(),
-                            feature: result.feature,
-                            vectors: JSON.stringify(result.vectors),
-                            confidence: 0.9, 
-                            status: result.status === 'Conseguido' ? 'success' : 'processing',
-                          };
-                          setHandResult(biometric);
-                          setResults(prev => [biometric, ...prev]); 
-                          
-                        }}
+                    {/* Envolver video y añadir canvas */}
+                    <div className="relative w-full h-full">
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-contain rounded-lg"
                       />
-                      </>
+                      <canvas
+                        ref={canvasRef}
+                        className="absolute inset-0 w-full h-full pointer-events-none"
+                      />
+                    </div>
+                    <HandTracking
+                      enable={isStreaming && !streamError}
+                      videoRef={videoRef}
+                      canvasRef={canvasRef}
+                      onResult={(result: HandTrackingResult)=>{
+                        const biometric: BiometricResult = {
+                          id: crypto.randomUUID(),
+                          timestamp: new Date(result.timeStamp).toLocaleTimeString(),
+                          feature: result.feature,
+                          vectors: JSON.stringify(result.vectors),
+                          confidence: 0.9, 
+                          status: result.status === 'Conseguido' ? 'success' : 'processing',
+                        };
+                        setResults(prev => [biometric, ...prev]); 
+                        
+                      }}
+                    />
+                    </>
                   )}
                 </motion.div>
               </motion.div>
