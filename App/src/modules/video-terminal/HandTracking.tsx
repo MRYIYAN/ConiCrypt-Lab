@@ -11,7 +11,7 @@ export interface HandTrackingResult {
 
 interface HandTrackingProps {
   enable: boolean;
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement> | null;
   onResult: (result: HandTrackingResult) => void;
 }
 

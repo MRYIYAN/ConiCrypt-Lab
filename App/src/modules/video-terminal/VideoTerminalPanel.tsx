@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import { Camera, CameraOff, Activity, X } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { Header } from './../Header/Header';
 import styles from './VideoTerminalPanel.module.css';
 import { TypingText } from '../../components/ui/TypingText';
+import{HandTracking, HandTrackingResult}from'../../modules/video-terminal/HandTracking';
 
 interface BiometricResult {
   id: string;
@@ -171,6 +172,11 @@ export function VideoTerminalPanel() {
     setIsStreaming(false);
     setStreamError(null);
   };
+  
+  const [handResult, setHandResult] = useState<BiometricResult | null>(null);
+  const [results, setResults] = useState<BiometricResult[]>(staticResults);
+
+
 
   return (
     <>
@@ -321,12 +327,31 @@ export function VideoTerminalPanel() {
                       </div>
                     </div>
                   ) : (
+                    <>
                     <video
                       ref={videoRef}
                       autoPlay
                       playsInline
                       className="w-full h-full object-contain rounded-lg"
                     />
+                      <HandTracking
+                        enable={isStreaming && !streamError}
+                        videoRef={videoRef}
+                        onResult={(result: HandTrackingResult)=>{
+                          const biometric: BiometricResult = {
+                            id: crypto.randomUUID(),
+                            timestamp: new Date(result.timeStamp).toLocaleTimeString(),
+                            feature: result.feature,
+                            vectors: JSON.stringify(result.vectors),
+                            confidence: 0.9, 
+                            status: result.status === 'Conseguido' ? 'success' : 'processing',
+                          };
+                          setHandResult(biometric);
+                          setResults(prev => [biometric, ...prev]); 
+                          
+                        }}
+                      />
+                      </>
                   )}
                 </motion.div>
               </motion.div>
@@ -422,7 +447,7 @@ export function VideoTerminalPanel() {
                         </tr>
                       </thead>
                       <tbody>
-                        {staticResults.map((result) => (
+                        {results.map((result) => (
                           <tr
                             key={result.id}
                             className="
