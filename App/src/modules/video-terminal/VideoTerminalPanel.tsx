@@ -180,6 +180,7 @@ export function VideoTerminalPanel() {
               playsInline
               muted
               className={`w-full h-full object-contain rounded-lg ${isStreaming ? 'block' : 'hidden'}`}
+              style={{ transform: 'scaleX(-1)' }}   
             />
             <canvas
               ref={canvasRef}
