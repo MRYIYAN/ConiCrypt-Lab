@@ -89,8 +89,9 @@ export function HandTracking({
         ctx.fill();
       });
 
+      // Corregir espejo TAMBIÉN en la lógica
       const puntos = landmarks.map((lm: { x: number; y: number; z: number }) => [
-        lm.x,
+        1 - lm.x,  
         lm.y,
         lm.z,
       ]);
@@ -115,6 +116,35 @@ export function HandTracking({
         ctx.stroke();
       });
 
+      // Calcular cuántos dedos están levantados
+      let fingersUp = 0;
+      // Pulgar
+      if (isRight) {
+        if (puntos[TIP_IDS[0]][0] > puntos[PIP_IDS[0]][0]) fingersUp++;
+      } else {
+        if (puntos[TIP_IDS[0]][0] < puntos[PIP_IDS[0]][0]) fingersUp++;
+      }
+      // Otros dedos con umbral para evitar jitter
+      const THRESHOLD = 0.03;
+      for (let i = 1; i < 5; i++) {
+        if ((puntos[PIP_IDS[i]][1] - puntos[TIP_IDS[i]][1]) > THRESHOLD) {
+          fingersUp++;
+        }
+      }
+
+      //  DIBUJAR TEXTO DE CONTEO 
+      ctx.font = 'bold 32px monospace';
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 4;
+
+      // Posición: encima de la muñeca
+      const textX = (1 - wrist[0]) * canvas.width + 10;
+      const textY = wrist[1] * canvas.height - 20;
+
+      ctx.strokeText(`DEDOS: ${fingersUp}`, textX, textY);
+      ctx.fillText(`DEDOS: ${fingersUp}`, textX, textY);
+
       // 4. calcular datos normalizados por referencia ósea (índice)
       const scale = Math.hypot(
         puntos[8][0] - puntos[0][0],
@@ -129,19 +159,6 @@ export function HandTracking({
           (p[2] - wrist[2]) / scale,
         ];
       });
-
-      // Calcular cuántos dedos están levantados
-      let fingersUp = 0;
-      // Pulgar
-      if (isRight) {
-        if (puntos[TIP_IDS[0]][0] > puntos[PIP_IDS[0]][0]) fingersUp++;
-      } else {
-        if (puntos[TIP_IDS[0]][0] < puntos[PIP_IDS[0]][0]) fingersUp++;
-      }
-      // Otros dedos
-      for (let i = 1; i < 5; i++) {
-        if (puntos[TIP_IDS[i]][1] < puntos[PIP_IDS[i]][1]) fingersUp++;
-      }
 
 
       onResult({
@@ -178,7 +195,7 @@ export function HandTracking({
       camera.stop();
       hands.close();
     };
-  }, [enable, videoRef, onResult]);
+  }, [enable, videoRef,]); 
 
   return null;
 }
