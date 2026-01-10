@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, CameraOff, Activity, X } from 'lucide-react';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { Camera, CameraOff, Activity } from 'lucide-react';
+import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { Header } from './../Header/Header';
 import styles from './VideoTerminalPanel.module.css';
 import { TypingText } from '../../components/ui/TypingText';
@@ -69,7 +69,7 @@ const staticResults: BiometricResult[] = [
 
 export function VideoTerminalPanel() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null); // 1️⃣ Añadido ref del canvas
+  const canvasRef = useRef<HTMLCanvasElement>(null); // 1️ Añadido ref del canvas
   const containerRef = useRef<HTMLDivElement>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
@@ -127,54 +127,29 @@ export function VideoTerminalPanel() {
   const startCamera = async () => {
     try {
       setStreamError(null);
-      
-      // Verificar si el navegador soporta getUserMedia
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setStreamError('Tu navegador no soporta acceso a la cámara.');
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false,
+      });
+
+      if (!videoRef.current) {
+        console.error('videoRef no existe');
         return;
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
-        audio: false
-      });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setIsStreaming(true);
-      }
-    } catch (error: any) {
-      let errorMessage = 'No se pudo acceder a la cámara.';
-      
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        errorMessage = 'Permiso denegado. Por favor, permite el acceso a la cámara en la configuración de tu navegador.';
-      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-        errorMessage = 'No se encontró ninguna cámara conectada al dispositivo.';
-      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-        errorMessage = 'La cámara está siendo utilizada por otra aplicación.';
-      } else if (error.name === 'OverconstrainedError') {
-        errorMessage = 'No se pudo iniciar la cámara con la configuración solicitada.';
-      } else if (error.name === 'SecurityError') {
-        errorMessage = 'Acceso bloqueado por seguridad. Asegúrate de usar HTTPS.';
-      }
-      
-      setStreamError(errorMessage);
-      setIsStreaming(true); // Mostrar panel con mensaje de error
-      console.error('Error al acceder a la cámara:', error);
+      videoRef.current.srcObject = stream;
+
+      await videoRef.current.play(); // CLAVE
+
+      setIsStreaming(true);
+    } catch (err) {
+      console.error(err);
+      setStreamError('No se pudo acceder a la cámara');
     }
   };
 
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    setIsStreaming(false);
-    setStreamError(null);
-  };
-  
-  // Eliminado handResult, no se usa
+
   const [results, setResults] = useState<BiometricResult[]>(staticResults);
 
 
@@ -197,8 +172,20 @@ export function VideoTerminalPanel() {
       >
         {/* Video Section */}
         <div className="min-h-[50vh] max-h-[60vh] p-6 flex items-center justify-center bg-black/20">
-          <AnimatePresence mode="wait">
-            {!isStreaming ? (
+          {/* VIDEO SIEMPRE PRESENTE */}
+          <div className="relative w-full h-full">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full h-full object-contain rounded-lg ${isStreaming ? 'block' : 'hidden'}`}
+            />
+            <canvas
+              ref={canvasRef}
+              className={`absolute inset-0 w-full h-full pointer-events-none ${isStreaming ? 'block' : 'hidden'}`}
+            />
+            {!isStreaming && (
               <motion.button
                 key="start-button"
                 initial={{ scale: 0.9, opacity: 0 }}
@@ -208,24 +195,13 @@ export function VideoTerminalPanel() {
                 onClick={startCamera}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.97 }}
-                className="
-                  relative z-30
-                  flex flex-col items-center justify-center
-                  px-20 py-16
-                  min-w-90 min-h-65
-                  rounded-3xl
-                  bg-linear-to-br from-[#6366f1] to-[#8b5cf6]
-                  shadow-[0_20px_60px_rgba(123,92,246,0.45)]
-                  transition-all
-                "
+                className="absolute inset-0 flex flex-col items-center justify-center px-20 py-16 min-w-90 min-h-65 rounded-3xl bg-linear-to-br from-[#6366f1] to-[#8b5cf6] shadow-[0_20px_60px_rgba(123,92,246,0.45)] transition-all"
               >
-                {/* Icono en círculo */}
                 <div className="mb-7 flex items-center justify-center">
                   <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center">
                     <Camera className="w-12 h-12 text-white" />
                   </div>
                 </div>
-
                 <h2 className="text-white text-3xl font-semibold tracking-tight mb-3">
                   Iniciar Captura
                 </h2>
@@ -233,138 +209,34 @@ export function VideoTerminalPanel() {
                   Click para activar la cámara
                 </p>
               </motion.button>
-            ) : (
-              <motion.div
-                key="video-panel"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                style={{
-                  x: parallaxReady ? panelX : 0,
-                  y: parallaxReady ? panelY : 0,
-                }}
-                className="w-full h-full rounded-xl 
-                           border border-[#3B4BFF]/20
-                           bg-[#0b0b14]/70
-                           shadow-[0_0_40px_rgba(59,75,255,0.12)]
-                           overflow-hidden flex flex-col"
-              >
-                {/* Video Header as REAL PANEL */}
-                <motion.div
-                  className="relative rounded-xl p-0.5"
-                  style={{
-                    x: parallaxReady ? panelX : 0,
-                    y: parallaxReady ? panelY : 0,
-                  }}
-                  transition={{ type: 'spring', stiffness: 18, damping: 40 }}
-                >
-                  {/* Glow around header */}
-                  <motion.div
-                    className={styles.glowBorder}
-                    style={{
-                      x: parallaxReady ? borderX : 0,
-                      y: parallaxReady ? borderY : 0,
-                    }}
-                    transition={{ type: 'spring', stiffness: 16, damping: 45 }}
-                  />
-                  {/* Real header panel */}
-                  <motion.div className={`${styles.panel} ${styles.curvedPanel} rounded-xl overflow-hidden`}>
-                    {/* Header bar with inner micro-parallax */}
-                    <motion.div
-                      className="flex items-center justify-between px-6 py-4 
-                                 bg-black/40 backdrop-blur-[2px]
-                                 border-b border-[#3B4BFF]/10"
-                      style={{
-                        x: parallaxReady ? innerX : 0,
-                        y: parallaxReady ? innerY : 0,
-                      }}
-                      transition={{ type: 'spring', stiffness: 30, damping: 40 }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-linear-to-br from-[#6366f1] to-[#8b5cf6]">
-                          <Camera className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <motion.h2
-                            style={{
-                              x: parallaxReady ? innerX : 0,
-                              y: parallaxReady ? innerY : 0,
-                            }}
-                            transition={{ type: 'spring', stiffness: 30, damping: 40 }}
-                            className="text-white"
-                          >
-                            <TypingText text="Captura de Video" speed={60} cursorDelay={2000} />
-                          </motion.h2>
-                          <p className="text-sm text-gray-400">Señal de cámara en tiempo real</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={stopCamera}
-                        className="px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 transition-colors flex items-center gap-2"
-                      >
-                        <X className="w-4 h-4" />
-                        Detener
-                      </button>
-                    </motion.div>
-                  </motion.div>
-                </motion.div>
-
-                {/* Video Display (inner parallax) */}
-                <motion.div
-                  className="flex-1 flex items-center justify-center p-6"
-                  style={{
-                    x: parallaxReady ? innerX : 0,
-                    y: parallaxReady ? innerY : 0,
-                  }}
-                  transition={{ type: 'spring', stiffness: 30, damping: 40 }}
-                >
-                  {streamError ? (
-                    <div className="flex flex-col items-center gap-4 text-gray-400">
-                      <div className="p-6 rounded-full bg-[#1a1a2f] border border-[#2a2a3f]">
-                        <CameraOff className="w-12 h-12" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm text-red-400">{streamError}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                    {/* Envolver video y añadir canvas */}
-                    <div className="relative w-full h-full">
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-contain rounded-lg"
-                      />
-                      <canvas
-                        ref={canvasRef}
-                        className="absolute inset-0 w-full h-full pointer-events-none"
-                      />
-                    </div>
-                    <HandTracking
-                      enable={isStreaming && !streamError}
-                      videoRef={videoRef}
-                      canvasRef={canvasRef}
-                      onResult={(result: HandTrackingResult)=>{
-                        const biometric: BiometricResult = {
-                          id: crypto.randomUUID(),
-                          timestamp: new Date(result.timeStamp).toLocaleTimeString(),
-                          feature: result.feature,
-                          vectors: JSON.stringify(result.vectors),
-                          confidence: 0.9, 
-                          status: result.status === 'Conseguido' ? 'success' : 'processing',
-                        };
-                        setResults(prev => [biometric, ...prev]); 
-                        
-                      }}
-                    />
-                    </>
-                  )}
-                </motion.div>
-              </motion.div>
             )}
-          </AnimatePresence>
+            <HandTracking
+              enable={isStreaming && !streamError}
+              videoRef={videoRef}
+              canvasRef={canvasRef}
+              onResult={(result: HandTrackingResult)=>{
+                const biometric: BiometricResult = {
+                  id: crypto.randomUUID(),
+                  timestamp: new Date(result.timeStamp).toLocaleTimeString(),
+                  feature: result.feature,
+                  vectors: JSON.stringify(result.vectors),
+                  confidence: 0.9, 
+                  status: result.status === 'Conseguido' ? 'success' : 'processing',
+                };
+                setResults(prev => [biometric, ...prev]); 
+              }}
+            />
+            {streamError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-gray-400 bg-black/60">
+                <div className="p-6 rounded-full bg-[#1a1a2f] border border-[#2a2a3f]">
+                  <CameraOff className="w-12 h-12" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-red-400">{streamError}</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Spacer between video and results */}
